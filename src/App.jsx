@@ -11,7 +11,7 @@ import { BrowserRouter, Routes, Route, NavLink, useNavigate } from "react-router
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Rewiring-Asia-s-Supply-Chains">
       <div className="min-h-screen bg-[#0b0f19] text-white antialiased">
         <Navbar />
         <main>
