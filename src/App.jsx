@@ -1,7 +1,7 @@
 import React, { Suspense, useState, useEffect, createContext, useContext } from "react";
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from "react-router-dom";
-import WorldGlobe from "./components/WorldGlobe";
-import AsiaMap3D from "./components/AsiaMap3D";
+import RealGlobe from "./components/RealGlobe";
+import RealSEAMap from "./components/RealSEAMap";
 import Timeline3DNew from "./components/Timeline3DNew";
 import SupplyChain3D from "./components/SupplyChain3D";
 
@@ -377,7 +377,7 @@ function Home() {
 
             <div className="h-[450px] lg:h-[550px]">
               <Suspense fallback={<Loader />}>
-                <WorldGlobe
+                <RealGlobe
                   locations={locations}
                   connections={connections}
                   height="100%"
@@ -403,7 +403,7 @@ function Home() {
 
         <div className="h-[500px] rounded-3xl overflow-hidden border border-white/5">
           <Suspense fallback={<Loader />}>
-            <AsiaMap3D height="500px" showRoutes={true} />
+            <RealSEAMap height="500px" showRoutes={true} />
           </Suspense>
         </div>
 
@@ -649,7 +649,7 @@ function Regional() {
       <Section>
         <div className="h-[500px] rounded-3xl overflow-hidden border border-white/5 mb-4">
           <Suspense fallback={<Loader />}>
-            <AsiaMap3D
+            <RealSEAMap
               height="500px"
               selectedCountry={selectedCountry}
               onCountrySelect={setSelectedCountry}
@@ -741,7 +741,7 @@ function Global() {
       <Section>
         <div className="h-[500px] rounded-3xl overflow-hidden border border-white/5">
           <Suspense fallback={<Loader />}>
-            <WorldGlobe
+            <RealGlobe
               locations={globalLocations}
               connections={globalConnections}
               height="500px"
