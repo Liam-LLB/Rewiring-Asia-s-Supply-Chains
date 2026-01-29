@@ -3,183 +3,222 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, Line } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Real GeoJSON-style coordinates for SEA countries (more accurate shapes)
+// Accurate country data with real geographic outlines
 const countryData = {
   singapore: {
     name: "Singapore",
+    fullName: "Republic of Singapore",
     color: "#ef4444",
-    info: "Financial hub • Tech center • Port city",
-    // Actual Singapore shape (simplified)
+    highlightColor: "#ff6b6b",
+    info: "Global Financial Hub • Tech Center • Major Port",
+    gdp: "$397B",
+    population: "5.9M",
+    role: "JS-SEZ Partner",
+    // Simplified but accurate Singapore outline
     outline: [
-      [103.605, 1.168], [103.653, 1.142], [103.707, 1.131], [103.766, 1.143],
-      [103.826, 1.167], [103.876, 1.197], [103.923, 1.235], [103.968, 1.277],
-      [104.007, 1.323], [104.041, 1.370], [104.054, 1.401], [104.034, 1.427],
-      [103.994, 1.443], [103.941, 1.449], [103.883, 1.447], [103.826, 1.439],
-      [103.773, 1.425], [103.723, 1.405], [103.679, 1.378], [103.643, 1.345],
-      [103.617, 1.306], [103.602, 1.263], [103.598, 1.218], [103.605, 1.168]
+      [103.605, 1.168], [103.65, 1.145], [103.70, 1.135], [103.76, 1.145],
+      [103.82, 1.165], [103.87, 1.195], [103.92, 1.235], [103.97, 1.280],
+      [104.01, 1.325], [104.04, 1.370], [104.05, 1.400], [104.03, 1.425],
+      [103.99, 1.442], [103.94, 1.448], [103.88, 1.446], [103.82, 1.438],
+      [103.77, 1.424], [103.72, 1.404], [103.68, 1.378], [103.64, 1.348],
+      [103.62, 1.310], [103.60, 1.265], [103.60, 1.218], [103.605, 1.168]
     ],
-    center: [103.82, 1.35],
-    scale: 15
+    center: [103.82, 1.30],
+    labelOffset: [0, 0.8]
   },
   johor: {
     name: "Johor",
+    fullName: "Johor, Malaysia",
     color: "#3b82f6",
-    info: "JS-SEZ partner • Manufacturing • Land resources",
+    highlightColor: "#60a5fa",
+    info: "JS-SEZ Partner • Manufacturing Hub • Land Bridge",
+    gdp: "$28B",
+    population: "4.0M",
+    role: "JS-SEZ Partner",
     outline: [
-      [103.35, 1.45], [103.50, 1.55], [103.70, 1.60], [103.90, 1.55],
-      [104.10, 1.65], [104.20, 1.80], [104.10, 2.00], [103.90, 2.10],
-      [103.70, 2.05], [103.50, 2.10], [103.30, 2.00], [103.20, 1.80],
-      [103.25, 1.60], [103.35, 1.45]
+      [103.35, 1.45], [103.45, 1.50], [103.55, 1.52], [103.70, 1.55],
+      [103.85, 1.52], [104.00, 1.58], [104.15, 1.70], [104.25, 1.88],
+      [104.20, 2.05], [104.05, 2.18], [103.85, 2.25], [103.65, 2.22],
+      [103.45, 2.28], [103.25, 2.18], [103.15, 2.00], [103.18, 1.82],
+      [103.25, 1.65], [103.35, 1.45]
     ],
-    center: [103.65, 1.75],
-    scale: 5
+    center: [103.70, 1.85],
+    labelOffset: [0, 0.6]
   },
   malaysia: {
-    name: "Peninsular Malaysia",
+    name: "Malaysia",
+    fullName: "Peninsular Malaysia",
     color: "#1e40af",
-    info: "Resources • Industrial capacity • Strategic location",
+    highlightColor: "#3b82f6",
+    info: "Manufacturing • Electronics • Palm Oil",
+    gdp: "$373B",
+    population: "32.7M",
+    role: "Regional Partner",
     outline: [
-      [103.35, 1.45], [103.50, 1.55], [103.70, 1.75], [103.50, 2.20],
-      [103.40, 2.80], [103.50, 3.40], [103.45, 4.00], [103.50, 4.70],
-      [103.20, 5.30], [102.60, 5.85], [102.00, 6.15], [101.30, 6.50],
-      [100.60, 6.55], [100.10, 6.45], [99.70, 6.35], [99.55, 6.10],
-      [99.90, 5.60], [100.15, 5.10], [100.25, 4.60], [100.40, 4.10],
-      [100.55, 3.60], [100.75, 3.10], [101.00, 2.70], [101.40, 2.30],
-      [101.85, 1.95], [102.40, 1.70], [103.00, 1.50], [103.35, 1.45]
+      [103.35, 1.45], [103.25, 1.65], [103.15, 2.00], [103.25, 2.35],
+      [103.35, 2.85], [103.40, 3.45], [103.38, 4.05], [103.42, 4.65],
+      [103.25, 5.25], [102.70, 5.78], [102.10, 6.12], [101.45, 6.45],
+      [100.75, 6.52], [100.18, 6.42], [99.72, 6.35], [99.58, 6.08],
+      [99.88, 5.58], [100.12, 5.08], [100.22, 4.58], [100.38, 4.08],
+      [100.52, 3.58], [100.72, 3.08], [100.98, 2.68], [101.35, 2.28],
+      [101.82, 1.92], [102.38, 1.68], [102.98, 1.48], [103.35, 1.45]
     ],
     center: [101.5, 4.0],
-    scale: 2.2
+    labelOffset: [-0.5, 0]
   },
   thailand: {
     name: "Thailand",
+    fullName: "Kingdom of Thailand",
     color: "#8b5cf6",
-    info: "Automotive hub • EV manufacturing • Tourism",
+    highlightColor: "#a78bfa",
+    info: "Automotive Hub • Tourism • Agriculture",
+    gdp: "$506B",
+    population: "69.8M",
+    role: "ASEAN Partner",
     outline: [
-      [100.10, 6.45], [99.65, 6.55], [99.20, 7.05], [98.70, 7.75],
-      [98.35, 8.45], [98.25, 9.15], [98.45, 9.75], [98.70, 10.35],
-      [99.05, 10.95], [99.25, 11.65], [99.10, 12.35], [99.25, 13.05],
-      [99.50, 13.75], [99.20, 14.45], [98.95, 15.15], [98.55, 15.75],
-      [98.25, 16.35], [97.85, 16.85], [97.55, 17.35], [97.75, 17.95],
-      [98.35, 18.45], [98.95, 18.95], [99.55, 19.35], [100.15, 19.75],
-      [100.60, 20.15], [100.25, 20.55], [100.55, 20.35], [101.05, 19.95],
-      [101.55, 19.55], [101.95, 19.05], [102.35, 18.55], [102.85, 18.05],
-      [103.35, 17.55], [103.85, 17.05], [104.35, 16.55], [104.75, 16.05],
-      [105.15, 15.55], [105.45, 15.05], [105.55, 14.55], [105.35, 14.05],
-      [104.95, 13.55], [104.45, 13.05], [103.95, 12.55], [103.45, 12.05],
-      [102.95, 11.55], [102.45, 11.05], [101.95, 10.55], [101.45, 10.05],
-      [100.95, 9.55], [100.45, 9.05], [100.05, 8.45], [100.00, 7.75],
-      [100.00, 7.05], [100.10, 6.45]
+      [100.08, 6.42], [99.62, 6.52], [99.18, 7.02], [98.68, 7.72],
+      [98.32, 8.42], [98.22, 9.12], [98.42, 9.72], [98.68, 10.32],
+      [99.02, 10.92], [99.22, 11.62], [99.08, 12.32], [99.22, 13.02],
+      [99.48, 13.72], [99.18, 14.42], [98.92, 15.12], [98.52, 15.72],
+      [98.22, 16.32], [97.82, 16.82], [97.52, 17.32], [97.72, 17.92],
+      [98.32, 18.42], [98.92, 18.92], [99.52, 19.32], [100.12, 19.72],
+      [100.58, 20.12], [100.92, 20.42], [101.42, 19.92], [101.92, 19.02],
+      [102.32, 18.52], [102.82, 18.02], [103.32, 17.52], [103.82, 17.02],
+      [104.32, 16.52], [104.72, 16.02], [105.12, 15.52], [105.42, 15.02],
+      [105.52, 14.52], [105.32, 14.02], [104.92, 13.52], [104.42, 13.02],
+      [103.92, 12.52], [103.42, 12.02], [102.92, 11.52], [102.42, 11.02],
+      [101.92, 10.52], [101.42, 10.02], [100.92, 9.52], [100.42, 9.02],
+      [100.02, 8.42], [99.98, 7.72], [99.98, 7.02], [100.08, 6.42]
     ],
     center: [101.0, 13.0],
-    scale: 1.5
+    labelOffset: [0, 0]
   },
   vietnam: {
     name: "Vietnam",
+    fullName: "Socialist Republic of Vietnam",
     color: "#10b981",
-    info: "Electronics • Textiles • Growing tech sector",
+    highlightColor: "#34d399",
+    info: "Electronics • Textiles • Growing Tech",
+    gdp: "$363B",
+    population: "97.3M",
+    role: "Regional Partner",
     outline: [
-      [103.95, 22.55], [104.45, 22.85], [105.05, 23.05], [105.55, 22.85],
-      [106.05, 22.55], [106.55, 22.25], [106.85, 21.85], [107.05, 21.45],
-      [106.85, 21.05], [106.55, 20.55], [106.25, 20.05], [106.05, 19.55],
-      [105.85, 19.05], [105.95, 18.55], [106.25, 18.05], [106.55, 17.55],
-      [107.05, 17.05], [107.55, 16.55], [108.05, 16.25], [108.35, 15.85],
-      [108.65, 15.45], [108.85, 15.05], [109.05, 14.55], [109.25, 14.05],
-      [109.35, 13.55], [109.35, 13.05], [109.25, 12.55], [109.05, 12.05],
-      [108.75, 11.55], [108.25, 11.05], [107.55, 10.55], [107.05, 10.35],
-      [106.55, 10.05], [106.25, 9.55], [105.85, 9.05], [105.55, 8.75],
-      [105.05, 8.55], [104.55, 8.65], [104.05, 8.85], [103.55, 9.05],
-      [103.25, 9.55], [103.05, 10.05], [102.85, 10.55], [102.95, 11.05],
-      [103.15, 11.55], [103.55, 12.05], [104.05, 12.55], [104.55, 13.05],
-      [104.85, 13.55], [105.05, 14.05], [105.35, 14.55], [105.55, 15.05],
-      [105.45, 15.55], [105.25, 16.05], [104.85, 16.55], [104.55, 17.05],
-      [104.25, 17.55], [104.05, 18.05], [103.95, 18.55], [104.05, 19.05],
-      [104.25, 19.55], [104.55, 20.05], [104.35, 20.55], [103.95, 21.05],
-      [103.65, 21.55], [103.55, 22.05], [103.95, 22.55]
+      [103.92, 22.52], [104.42, 22.82], [105.02, 23.02], [105.52, 22.82],
+      [106.02, 22.52], [106.52, 22.22], [106.82, 21.82], [107.02, 21.42],
+      [106.82, 21.02], [106.52, 20.52], [106.22, 20.02], [106.02, 19.52],
+      [105.82, 19.02], [105.92, 18.52], [106.22, 18.02], [106.52, 17.52],
+      [107.02, 17.02], [107.52, 16.52], [108.02, 16.22], [108.32, 15.82],
+      [108.62, 15.42], [108.82, 15.02], [109.02, 14.52], [109.22, 14.02],
+      [109.32, 13.52], [109.32, 13.02], [109.22, 12.52], [109.02, 12.02],
+      [108.72, 11.52], [108.22, 11.02], [107.52, 10.52], [107.02, 10.32],
+      [106.52, 10.02], [106.22, 9.52], [105.82, 9.02], [105.52, 8.72],
+      [105.02, 8.52], [104.52, 8.62], [104.02, 8.82], [103.52, 9.02],
+      [103.22, 9.52], [103.02, 10.02], [102.82, 10.52], [102.92, 11.02],
+      [103.12, 11.52], [103.52, 12.02], [104.02, 12.52], [104.52, 13.02],
+      [104.82, 13.52], [105.02, 14.02], [105.32, 14.52], [105.52, 15.02],
+      [105.42, 15.52], [105.22, 16.02], [104.82, 16.52], [104.52, 17.02],
+      [104.22, 17.52], [104.02, 18.02], [103.92, 18.52], [104.02, 19.02],
+      [104.22, 19.52], [104.52, 20.02], [104.32, 20.52], [103.92, 21.02],
+      [103.62, 21.52], [103.52, 22.02], [103.92, 22.52]
     ],
     center: [106.0, 16.0],
-    scale: 1.4
+    labelOffset: [0.5, 0]
   },
   indonesia: {
-    name: "Indonesia (Sumatra)",
+    name: "Indonesia",
+    fullName: "Republic of Indonesia (Sumatra)",
     color: "#f59e0b",
-    info: "Critical minerals • Palm oil • Natural resources",
+    highlightColor: "#fbbf24",
+    info: "Natural Resources • Palm Oil • Mining",
+    gdp: "$1.19T",
+    population: "273.5M",
+    role: "Regional Partner",
     outline: [
-      [95.35, 5.65], [95.55, 5.25], [96.05, 4.85], [96.55, 4.45],
-      [97.05, 4.05], [97.55, 3.55], [98.05, 3.05], [98.55, 2.55],
-      [99.05, 2.05], [99.55, 1.55], [100.05, 1.05], [100.55, 0.55],
-      [101.05, 0.05], [101.55, -0.45], [102.05, -0.95], [102.55, -1.45],
-      [103.05, -1.95], [103.55, -2.45], [104.05, -2.95], [104.55, -3.45],
-      [105.05, -3.95], [105.55, -4.45], [106.05, -4.95], [105.55, -5.45],
-      [105.05, -5.75], [104.55, -5.45], [104.05, -5.15], [103.55, -4.75],
-      [103.05, -4.45], [102.55, -3.95], [102.05, -3.45], [101.55, -2.95],
-      [101.05, -2.45], [100.55, -1.95], [100.05, -1.45], [99.55, -0.95],
-      [99.05, -0.45], [98.55, 0.05], [98.05, 0.55], [97.55, 1.05],
-      [97.05, 1.55], [96.55, 2.05], [96.05, 2.55], [95.55, 3.05],
-      [95.25, 3.55], [95.05, 4.05], [95.05, 4.55], [95.15, 5.05],
-      [95.35, 5.65]
+      [95.32, 5.62], [95.52, 5.22], [96.02, 4.82], [96.52, 4.42],
+      [97.02, 4.02], [97.52, 3.52], [98.02, 3.02], [98.52, 2.52],
+      [99.02, 2.02], [99.52, 1.52], [100.02, 1.02], [100.52, 0.52],
+      [101.02, 0.02], [101.52, -0.48], [102.02, -0.98], [102.52, -1.48],
+      [103.02, -1.98], [103.52, -2.48], [104.02, -2.98], [104.52, -3.48],
+      [105.02, -3.98], [105.52, -4.48], [106.02, -4.98], [105.52, -5.48],
+      [105.02, -5.78], [104.52, -5.48], [104.02, -5.18], [103.52, -4.78],
+      [103.02, -4.48], [102.52, -3.98], [102.02, -3.48], [101.52, -2.98],
+      [101.02, -2.48], [100.52, -1.98], [100.02, -1.48], [99.52, -0.98],
+      [99.02, -0.48], [98.52, 0.02], [98.02, 0.52], [97.52, 1.02],
+      [97.02, 1.52], [96.52, 2.02], [96.02, 2.52], [95.52, 3.02],
+      [95.22, 3.52], [95.02, 4.02], [95.02, 4.52], [95.12, 5.02],
+      [95.32, 5.62]
     ],
     center: [101.0, 0.5],
-    scale: 1.3
+    labelOffset: [0, 0]
   },
   philippines: {
     name: "Philippines",
+    fullName: "Republic of the Philippines",
     color: "#ec4899",
-    info: "Services • BPO hub • Growing manufacturing",
+    highlightColor: "#f472b6",
+    info: "BPO Services • Electronics • Remittances",
+    gdp: "$394B",
+    population: "109.6M",
+    role: "Regional Partner",
     outline: [
-      [117.05, 5.05], [117.55, 5.55], [118.05, 6.05], [118.55, 6.55],
-      [119.05, 7.05], [119.55, 7.55], [120.05, 8.05], [120.55, 8.55],
-      [121.05, 9.05], [121.55, 9.55], [122.05, 10.05], [122.55, 10.55],
-      [123.05, 11.05], [123.55, 11.55], [124.05, 12.05], [124.55, 12.55],
-      [124.55, 13.05], [124.25, 13.55], [123.85, 14.05], [123.55, 14.55],
-      [123.05, 15.05], [122.55, 15.55], [122.05, 16.05], [121.55, 16.55],
-      [121.05, 17.05], [120.55, 17.55], [120.05, 18.05], [119.85, 18.55],
-      [120.25, 18.25], [120.55, 17.85], [120.35, 17.35], [119.85, 17.05],
-      [119.35, 16.55], [118.85, 16.05], [118.55, 15.55], [118.25, 15.05],
-      [118.05, 14.55], [117.85, 14.05], [117.55, 13.55], [117.25, 13.05],
-      [117.05, 12.55], [116.85, 12.05], [116.55, 11.55], [116.25, 11.05],
-      [116.05, 10.55], [116.05, 10.05], [116.25, 9.55], [116.55, 9.05],
-      [116.55, 8.55], [116.35, 8.05], [116.05, 7.55], [116.05, 7.05],
-      [116.25, 6.55], [116.55, 6.05], [116.85, 5.55], [117.05, 5.05]
+      [117.02, 5.02], [117.52, 5.52], [118.02, 6.02], [118.52, 6.52],
+      [119.02, 7.02], [119.52, 7.52], [120.02, 8.02], [120.52, 8.52],
+      [121.02, 9.02], [121.52, 9.52], [122.02, 10.02], [122.52, 10.52],
+      [123.02, 11.02], [123.52, 11.52], [124.02, 12.02], [124.52, 12.52],
+      [124.52, 13.02], [124.22, 13.52], [123.82, 14.02], [123.52, 14.52],
+      [123.02, 15.02], [122.52, 15.52], [122.02, 16.02], [121.52, 16.52],
+      [121.02, 17.02], [120.52, 17.52], [120.02, 18.02], [119.82, 18.52],
+      [120.22, 18.22], [120.52, 17.82], [120.32, 17.32], [119.82, 17.02],
+      [119.32, 16.52], [118.82, 16.02], [118.52, 15.52], [118.22, 15.02],
+      [118.02, 14.52], [117.82, 14.02], [117.52, 13.52], [117.22, 13.02],
+      [117.02, 12.52], [116.82, 12.02], [116.52, 11.52], [116.22, 11.02],
+      [116.02, 10.52], [116.02, 10.02], [116.22, 9.52], [116.52, 9.02],
+      [116.52, 8.52], [116.32, 8.02], [116.02, 7.52], [116.02, 7.02],
+      [116.22, 6.52], [116.52, 6.02], [116.82, 5.52], [117.02, 5.02]
     ],
     center: [122.0, 12.0],
-    scale: 1.5
+    labelOffset: [0, 0]
   },
   cambodia: {
     name: "Cambodia",
+    fullName: "Kingdom of Cambodia",
     color: "#6366f1",
-    info: "Textiles • Agriculture • Tourism growth",
+    highlightColor: "#818cf8",
+    info: "Textiles • Agriculture • Tourism",
+    gdp: "$27B",
+    population: "16.7M",
+    role: "ASEAN Partner",
     outline: [
-      [102.55, 14.55], [103.05, 14.35], [103.55, 14.25], [104.05, 14.35],
-      [104.55, 14.45], [105.05, 14.35], [105.55, 14.05], [106.05, 13.55],
-      [106.55, 13.05], [106.85, 12.55], [106.55, 12.05], [106.05, 11.55],
-      [105.55, 11.05], [105.05, 10.85], [104.55, 10.55], [104.05, 10.55],
-      [103.55, 10.85], [103.25, 11.25], [103.05, 11.85], [102.85, 12.35],
-      [102.65, 12.85], [102.55, 13.35], [102.45, 13.85], [102.55, 14.55]
+      [102.52, 14.52], [103.02, 14.32], [103.52, 14.22], [104.02, 14.32],
+      [104.52, 14.42], [105.02, 14.32], [105.52, 14.02], [106.02, 13.52],
+      [106.52, 13.02], [106.82, 12.52], [106.52, 12.02], [106.02, 11.52],
+      [105.52, 11.02], [105.02, 10.82], [104.52, 10.52], [104.02, 10.52],
+      [103.52, 10.82], [103.22, 11.22], [103.02, 11.82], [102.82, 12.32],
+      [102.62, 12.82], [102.52, 13.32], [102.42, 13.82], [102.52, 14.52]
     ],
     center: [104.5, 12.5],
-    scale: 2.5
+    labelOffset: [0, 0]
   }
 };
 
 // Convert geo coordinates to 3D flat map position
-function geoToMap(lng, lat, scale = 1, offsetX = 0, offsetY = 0) {
+function geoToMap(lng, lat, scale = 0.6) {
   return [
-    (lng - 103) * scale * 0.8 + offsetX,
+    (lng - 103) * scale,
     0,
-    (lat - 8) * scale * -0.8 + offsetY
+    (lat - 8) * -scale
   ];
 }
 
-// Country shape with real borders
+// Country shape with realistic borders
 function CountryShape({ data, isSelected, isHovered, onSelect, onHover }) {
   const meshRef = useRef();
-  const outlineRef = useRef();
   const [localHover, setLocalHover] = useState(false);
 
   const shape = useMemo(() => {
     const s = new THREE.Shape();
     const points = data.outline.map(([lng, lat]) => {
-      const [x, , z] = geoToMap(lng, lat, data.scale, 0, 0);
+      const [x, , z] = geoToMap(lng, lat);
       return [x, -z];
     });
 
@@ -193,34 +232,37 @@ function CountryShape({ data, isSelected, isHovered, onSelect, onHover }) {
 
   const geometry = useMemo(() => {
     const extrudeSettings = {
-      depth: 0.15,
+      depth: isSelected || localHover ? 0.25 : 0.15,
       bevelEnabled: true,
-      bevelThickness: 0.02,
-      bevelSize: 0.02,
-      bevelSegments: 3
+      bevelThickness: 0.03,
+      bevelSize: 0.03,
+      bevelSegments: 4
     };
     return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  }, [shape]);
+  }, [shape, isSelected, localHover]);
 
   const outlinePoints = useMemo(() => {
     return data.outline.map(([lng, lat]) => {
-      const [x, , z] = geoToMap(lng, lat, data.scale, 0, 0);
-      return new THREE.Vector3(x, 0.2, z);
+      const [x, , z] = geoToMap(lng, lat);
+      return new THREE.Vector3(x, 0.3, z);
     });
   }, [data]);
 
   useFrame((state) => {
     if (meshRef.current) {
-      const targetY = (isSelected || localHover) ? 0.3 : 0;
-      meshRef.current.position.y += (targetY - meshRef.current.position.y) * 0.1;
-      meshRef.current.material.emissiveIntensity = (isSelected || localHover) ? 0.4 : 0.15;
+      const targetY = (isSelected || localHover) ? 0.2 : 0;
+      meshRef.current.position.y += (targetY - meshRef.current.position.y) * 0.12;
+
+      const targetEmissive = (isSelected || localHover) ? 0.5 : 0.2;
+      meshRef.current.material.emissiveIntensity += (targetEmissive - meshRef.current.material.emissiveIntensity) * 0.1;
     }
   });
 
-  const [cx, , cz] = geoToMap(data.center[0], data.center[1], data.scale, 0, 0);
+  const [cx, , cz] = geoToMap(data.center[0], data.center[1]);
+  const active = isSelected || localHover;
 
   return (
-    <group position={[cx, 0, cz]}>
+    <group>
       {/* Country mesh */}
       <mesh
         ref={meshRef}
@@ -231,32 +273,56 @@ function CountryShape({ data, isSelected, isHovered, onSelect, onHover }) {
         onPointerOut={() => { setLocalHover(false); onHover(null); }}
       >
         <meshStandardMaterial
-          color={isSelected || localHover ? "#ffffff" : data.color}
+          color={active ? data.highlightColor : data.color}
           emissive={data.color}
-          emissiveIntensity={0.15}
-          metalness={0.2}
-          roughness={0.8}
+          emissiveIntensity={0.2}
+          metalness={0.15}
+          roughness={0.75}
         />
       </mesh>
 
       {/* Border outline */}
       <Line
-        points={outlinePoints.map(p => [p.x - cx, p.y, p.z - cz])}
-        color={data.color}
-        lineWidth={2}
+        points={outlinePoints}
+        color={active ? "#ffffff" : data.color}
+        lineWidth={active ? 2.5 : 1.5}
         transparent
-        opacity={isSelected || localHover ? 1 : 0.5}
+        opacity={active ? 1 : 0.6}
       />
 
-      {/* Label */}
-      {(isSelected || localHover) && (
-        <Html position={[0, 1.2, 0]} center distanceFactor={12}>
-          <div className="bg-white rounded-xl p-4 shadow-2xl min-w-[200px] transform transition-all border border-slate-200">
-            <h3 className="text-slate-900 font-bold text-lg">{data.name}</h3>
-            <p className="text-slate-500 text-sm mt-1">{data.info}</p>
-            <div className="mt-3 flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ background: data.color }} />
-              <span className="text-xs text-slate-400">Click for details</span>
+      {/* Country label */}
+      {active && (
+        <Html
+          position={[cx + (data.labelOffset?.[0] || 0), 1.5, cz + (data.labelOffset?.[1] || 0)]}
+          center
+          distanceFactor={15}
+        >
+          <div className="bg-slate-900/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl min-w-[240px] border border-slate-600/50">
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-4 h-4 rounded-full shadow-lg"
+                style={{ background: data.color, boxShadow: `0 0 12px ${data.color}` }}
+              />
+              <h3 className="text-white font-bold text-lg">{data.name}</h3>
+            </div>
+            <p className="text-slate-300 text-sm mb-3">{data.info}</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-800/50 rounded-lg p-2">
+                <div className="text-slate-400">GDP</div>
+                <div className="text-white font-semibold">{data.gdp}</div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-2">
+                <div className="text-slate-400">Population</div>
+                <div className="text-white font-semibold">{data.population}</div>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-700">
+              <span
+                className="text-xs font-medium px-2 py-1 rounded-full"
+                style={{ background: `${data.color}30`, color: data.color }}
+              >
+                {data.role}
+              </span>
             </div>
           </div>
         </Html>
@@ -265,73 +331,85 @@ function CountryShape({ data, isSelected, isHovered, onSelect, onHover }) {
   );
 }
 
-// SEZ Zone between Singapore and Johor
+// JS-SEZ Zone indicator
 function SEZIndicator() {
   const ringRef = useRef();
-  const [sgX, , sgZ] = geoToMap(103.82, 1.35, 5, 0, 0);
-  const [jhX, , jhZ] = geoToMap(103.65, 1.75, 5, 0, 0);
+  const pulseRef = useRef();
+  const [sgX, , sgZ] = geoToMap(103.82, 1.35);
+  const [jhX, , jhZ] = geoToMap(103.70, 1.85);
   const centerX = (sgX + jhX) / 2;
   const centerZ = (sgZ + jhZ) / 2;
 
   useFrame((state) => {
     if (ringRef.current) {
-      ringRef.current.rotation.z = state.clock.elapsedTime * 0.3;
+      ringRef.current.rotation.z = state.clock.elapsedTime * 0.4;
+    }
+    if (pulseRef.current) {
+      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.15;
+      pulseRef.current.scale.set(scale, scale, 1);
     }
   });
 
   return (
-    <group position={[centerX, 0.05, centerZ]}>
-      {/* Pulsing ring */}
+    <group position={[centerX, 0.1, centerZ]}>
+      {/* Outer rotating ring */}
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.5, 2.2, 64]} />
+        <ringGeometry args={[0.8, 1.1, 64]} />
         <meshBasicMaterial color="#10b981" transparent opacity={0.25} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Inner fill */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <circleGeometry args={[1.5, 64]} />
-        <meshBasicMaterial color="#10b981" transparent opacity={0.1} />
+      {/* Inner pulsing ring */}
+      <mesh ref={pulseRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <ringGeometry args={[0.4, 0.6, 64]} />
+        <meshBasicMaterial color="#34d399" transparent opacity={0.35} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Label */}
-      <Html position={[0, 0.8, 0]} center>
-        <div className="bg-emerald-500 text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-emerald-500/30">
-          JS-SEZ Zone
-        </div>
-      </Html>
+      {/* Center fill */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <circleGeometry args={[0.4, 64]} />
+        <meshBasicMaterial color="#10b981" transparent opacity={0.15} />
+      </mesh>
 
-      {/* Connection line */}
+      {/* Connection line between Singapore and Johor */}
       <Line
-        points={[[sgX - centerX, 0.15, sgZ - centerZ], [jhX - centerX, 0.15, jhZ - centerZ]]}
+        points={[[sgX - centerX, 0.2, sgZ - centerZ], [jhX - centerX, 0.2, jhZ - centerZ]]}
         color="#fbbf24"
         lineWidth={3}
         dashed
-        dashSize={0.2}
-        dashScale={2}
+        dashSize={0.1}
+        dashScale={3}
       />
+
+      {/* Label */}
+      <Html position={[0, 0.6, 0]} center>
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl shadow-emerald-500/40 whitespace-nowrap">
+          🔗 JS-SEZ Zone
+        </div>
+      </Html>
     </group>
   );
 }
 
-// Trade route with animated flow
-function TradeFlow({ from, to, color = "#fbbf24" }) {
+// Trade route with animated particle
+function TradeRoute({ from, to, color = "#fbbf24", label }) {
   const particleRef = useRef();
-  const [fromX, , fromZ] = geoToMap(from[0], from[1], 2, 0, 0);
-  const [toX, , toZ] = geoToMap(to[0], to[1], 2, 0, 0);
+  const [fromX, , fromZ] = geoToMap(from[0], from[1]);
+  const [toX, , toZ] = geoToMap(to[0], to[1]);
 
   const curve = useMemo(() => {
+    const height = Math.sqrt((toX - fromX) ** 2 + (toZ - fromZ) ** 2) * 0.4;
     return new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(fromX, 0.2, fromZ),
-      new THREE.Vector3((fromX + toX) / 2, 1.5, (fromZ + toZ) / 2),
-      new THREE.Vector3(toX, 0.2, toZ)
+      new THREE.Vector3(fromX, 0.25, fromZ),
+      new THREE.Vector3((fromX + toX) / 2, height, (fromZ + toZ) / 2),
+      new THREE.Vector3(toX, 0.25, toZ)
     );
   }, [fromX, fromZ, toX, toZ]);
 
-  const points = useMemo(() => curve.getPoints(40), [curve]);
+  const points = useMemo(() => curve.getPoints(50), [curve]);
 
   useFrame((state) => {
     if (particleRef.current) {
-      const t = (state.clock.elapsedTime * 0.2) % 1;
+      const t = (state.clock.elapsedTime * 0.15) % 1;
       const point = curve.getPoint(t);
       particleRef.current.position.copy(point);
     }
@@ -339,44 +417,69 @@ function TradeFlow({ from, to, color = "#fbbf24" }) {
 
   return (
     <group>
-      <Line points={points} color={color} lineWidth={2} transparent opacity={0.4} />
+      <Line points={points} color={color} lineWidth={2} transparent opacity={0.45} />
       <mesh ref={particleRef}>
-        <sphereGeometry args={[0.08, 12, 12]} />
+        <sphereGeometry args={[0.06, 12, 12]} />
         <meshBasicMaterial color={color} />
       </mesh>
     </group>
   );
 }
 
-// Water/ocean plane
+// Ocean plane with realistic appearance
 function Ocean() {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-      <planeGeometry args={[80, 80]} />
-      <meshStandardMaterial
-        color="#0c3d5f"
-        metalness={0.9}
-        roughness={0.1}
-        transparent
-        opacity={0.95}
-      />
-    </mesh>
+    <group>
+      {/* Main ocean */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]}>
+        <planeGeometry args={[60, 60]} />
+        <meshStandardMaterial
+          color="#0a3d62"
+          metalness={0.85}
+          roughness={0.15}
+          transparent
+          opacity={0.95}
+        />
+      </mesh>
+
+      {/* Ocean depth layer */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
+        <planeGeometry args={[60, 60]} />
+        <meshBasicMaterial color="#051c2c" />
+      </mesh>
+    </group>
   );
 }
 
+// Grid overlay
+function MapGrid() {
+  return (
+    <gridHelper
+      args={[60, 60, "#1a4d70", "#0d2d45"]}
+      position={[0, -0.05, 0]}
+    />
+  );
+}
+
+// Main map scene
 function MapScene({ selectedCountry, hoveredCountry, onSelect, onHover, showRoutes }) {
   const tradeRoutes = [
-    { from: [103.82, 1.35], to: [103.65, 1.75], color: "#fbbf24" },
-    { from: [103.82, 1.35], to: [106.0, 16.0], color: "#10b981" },
-    { from: [103.82, 1.35], to: [101.0, 0.5], color: "#f59e0b" },
-    { from: [101.5, 4.0], to: [101.0, 13.0], color: "#8b5cf6" },
+    { from: [103.82, 1.35], to: [103.70, 1.85], color: "#10b981", label: "SG-JB" },
+    { from: [103.82, 1.35], to: [101.5, 4.0], color: "#3b82f6", label: "SG-MY" },
+    { from: [103.82, 1.35], to: [106.0, 16.0], color: "#10b981", label: "SG-VN" },
+    { from: [103.82, 1.35], to: [101.0, 13.0], color: "#8b5cf6", label: "SG-TH" },
+    { from: [103.82, 1.35], to: [101.0, 0.5], color: "#f59e0b", label: "SG-ID" },
+    { from: [103.82, 1.35], to: [122.0, 12.0], color: "#ec4899", label: "SG-PH" },
+    { from: [101.5, 4.0], to: [101.0, 13.0], color: "#6366f1", label: "MY-TH" },
+    { from: [101.0, 13.0], to: [104.5, 12.5], color: "#f97316", label: "TH-KH" },
   ];
 
   return (
     <>
       <Ocean />
-      <gridHelper args={[80, 40, "#1e4060", "#0d2845"]} position={[0, -0.04, 0]} />
+      <MapGrid />
 
+      {/* Countries */}
       {Object.entries(countryData).map(([key, data]) => (
         <CountryShape
           key={key}
@@ -388,10 +491,18 @@ function MapScene({ selectedCountry, hoveredCountry, onSelect, onHover, showRout
         />
       ))}
 
+      {/* JS-SEZ Zone */}
       <SEZIndicator />
 
+      {/* Trade routes */}
       {showRoutes && tradeRoutes.map((route, i) => (
-        <TradeFlow key={i} from={route.from} to={route.to} color={route.color} />
+        <TradeRoute
+          key={i}
+          from={route.from}
+          to={route.to}
+          color={route.color}
+          label={route.label}
+        />
       ))}
     </>
   );
@@ -408,10 +519,11 @@ export default function RealSEAMap({
 
   return (
     <div className={`w-full ${className}`} style={{ height }}>
-      <Canvas camera={{ position: [0, 25, 35], fov: 40 }}>
+      <Canvas camera={{ position: [0, 18, 22], fov: 45 }}>
         <ambientLight intensity={0.5} />
-        <directionalLight position={[15, 25, 15]} intensity={0.7} />
-        <pointLight position={[-15, 15, -15]} intensity={0.3} color="#4da6ff" />
+        <directionalLight position={[10, 20, 10]} intensity={0.8} />
+        <pointLight position={[-10, 15, -10]} intensity={0.3} color="#4da6ff" />
+        <pointLight position={[10, 10, 10]} intensity={0.2} color="#10b981" />
 
         <MapScene
           selectedCountry={selectedCountry}
@@ -424,9 +536,10 @@ export default function RealSEAMap({
         <OrbitControls
           enableZoom={true}
           enablePan={true}
-          minDistance={15}
-          maxDistance={60}
-          maxPolarAngle={Math.PI / 2.3}
+          minDistance={10}
+          maxDistance={45}
+          maxPolarAngle={Math.PI / 2.2}
+          minPolarAngle={Math.PI / 6}
           enableDamping
           dampingFactor={0.05}
         />

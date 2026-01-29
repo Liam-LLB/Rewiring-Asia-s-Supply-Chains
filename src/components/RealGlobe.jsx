@@ -1,209 +1,383 @@
-import React, { useRef, useMemo, useState } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html, Stars, Line } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Real GeoJSON-style coordinates for Southeast Asian countries (simplified but accurate)
-const seaCountryBorders = {
-  singapore: {
-    name: "Singapore",
-    color: "#ef4444",
-    coordinates: [
-      [103.6, 1.16], [103.7, 1.13], [103.82, 1.15], [103.91, 1.22],
-      [103.99, 1.27], [104.03, 1.32], [104.05, 1.37], [104.02, 1.42],
-      [103.96, 1.44], [103.87, 1.45], [103.78, 1.44], [103.7, 1.41],
-      [103.64, 1.36], [103.6, 1.29], [103.6, 1.21], [103.6, 1.16]
-    ]
-  },
-  malaysia_peninsular: {
-    name: "Malaysia",
-    color: "#3b82f6",
-    coordinates: [
-      [103.4, 1.4], [103.5, 1.5], [103.8, 1.75], [104.2, 1.6],
-      [104.1, 2.1], [103.5, 2.4], [103.4, 2.9], [103.5, 3.4],
-      [103.4, 4.0], [103.4, 4.8], [103.1, 5.4], [102.5, 5.9],
-      [101.9, 6.2], [101.2, 6.5], [100.5, 6.5], [100.1, 6.4],
-      [99.7, 6.5], [99.6, 6.2], [100.0, 5.8], [100.2, 5.3],
-      [100.3, 4.9], [100.5, 4.4], [100.6, 3.9], [100.7, 3.4],
-      [101.0, 2.9], [101.3, 2.5], [101.7, 2.1], [102.1, 1.9],
-      [102.5, 1.6], [103.0, 1.4], [103.4, 1.4]
-    ]
-  },
-  thailand: {
-    name: "Thailand",
-    color: "#8b5cf6",
-    coordinates: [
-      [100.1, 6.4], [99.6, 6.5], [99.2, 7.0], [98.6, 7.8],
-      [98.3, 8.4], [98.2, 9.0], [98.4, 9.6], [98.6, 10.2],
-      [99.0, 10.9], [99.2, 11.6], [99.0, 12.3], [99.2, 13.0],
-      [99.4, 13.7], [99.1, 14.4], [98.9, 15.0], [98.5, 15.6],
-      [98.2, 16.1], [97.8, 16.6], [97.5, 17.1], [97.8, 17.8],
-      [98.4, 18.3], [98.9, 18.8], [99.5, 19.2], [100.1, 19.6],
-      [100.5, 20.0], [100.1, 20.4], [100.5, 20.2], [101.0, 19.8],
-      [101.4, 19.4], [101.7, 18.9], [102.1, 18.3], [102.6, 17.8],
-      [103.1, 17.4], [103.5, 16.9], [104.0, 16.5], [104.5, 16.0],
-      [104.8, 15.5], [105.2, 15.0], [105.5, 14.5], [105.6, 14.0],
-      [105.4, 13.5], [105.0, 13.0], [104.5, 12.5], [104.0, 12.0],
-      [103.5, 11.5], [103.0, 11.0], [102.5, 10.5], [102.0, 10.0],
-      [101.5, 9.5], [101.0, 9.0], [100.5, 8.5], [100.0, 7.8],
-      [100.0, 7.2], [100.1, 6.4]
-    ]
-  },
-  vietnam: {
-    name: "Vietnam",
-    color: "#10b981",
-    coordinates: [
-      [103.9, 22.5], [104.4, 22.8], [105.0, 23.0], [105.5, 22.8],
-      [106.0, 22.5], [106.5, 22.2], [106.8, 21.8], [107.0, 21.4],
-      [106.8, 21.0], [106.5, 20.5], [106.2, 20.0], [106.0, 19.5],
-      [105.8, 19.0], [105.9, 18.5], [106.2, 18.0], [106.5, 17.5],
-      [107.0, 17.0], [107.5, 16.5], [108.0, 16.2], [108.3, 15.8],
-      [108.6, 15.4], [108.8, 15.0], [109.0, 14.5], [109.2, 14.0],
-      [109.3, 13.5], [109.3, 13.0], [109.2, 12.5], [109.0, 12.0],
-      [108.7, 11.5], [108.2, 11.0], [107.5, 10.5], [107.0, 10.3],
-      [106.5, 10.0], [106.2, 9.5], [105.8, 9.0], [105.5, 8.7],
-      [105.0, 8.5], [104.5, 8.6], [104.0, 8.8], [103.5, 9.0],
-      [103.2, 9.5], [103.0, 10.0], [102.8, 10.5], [102.9, 11.0],
-      [103.1, 11.5], [103.5, 12.0], [104.0, 12.5], [104.5, 13.0],
-      [104.8, 13.5], [105.0, 14.0], [105.3, 14.5], [105.5, 15.0],
-      [105.4, 15.5], [105.2, 16.0], [104.8, 16.5], [104.5, 17.0],
-      [104.2, 17.5], [104.0, 18.0], [103.9, 18.5], [104.0, 19.0],
-      [104.2, 19.5], [104.5, 20.0], [104.3, 20.5], [103.9, 21.0],
-      [103.6, 21.5], [103.5, 22.0], [103.9, 22.5]
-    ]
-  },
-  indonesia_sumatra: {
-    name: "Indonesia",
-    color: "#f59e0b",
-    coordinates: [
-      [95.3, 5.6], [95.5, 5.2], [96.0, 4.8], [96.5, 4.4],
-      [97.0, 4.0], [97.5, 3.5], [98.0, 3.0], [98.5, 2.5],
-      [99.0, 2.0], [99.5, 1.5], [100.0, 1.0], [100.5, 0.5],
-      [101.0, 0.0], [101.5, -0.5], [102.0, -1.0], [102.5, -1.5],
-      [103.0, -2.0], [103.5, -2.5], [104.0, -3.0], [104.5, -3.5],
-      [105.0, -4.0], [105.5, -4.5], [106.0, -5.0], [105.5, -5.5],
-      [105.0, -5.8], [104.5, -5.5], [104.0, -5.2], [103.5, -4.8],
-      [103.0, -4.5], [102.5, -4.0], [102.0, -3.5], [101.5, -3.0],
-      [101.0, -2.5], [100.5, -2.0], [100.0, -1.5], [99.5, -1.0],
-      [99.0, -0.5], [98.5, 0.0], [98.0, 0.5], [97.5, 1.0],
-      [97.0, 1.5], [96.5, 2.0], [96.0, 2.5], [95.5, 3.0],
-      [95.2, 3.5], [95.0, 4.0], [95.0, 4.5], [95.1, 5.0],
-      [95.3, 5.6]
-    ]
-  },
-  philippines: {
-    name: "Philippines",
-    color: "#ec4899",
-    coordinates: [
-      [117.0, 5.0], [117.5, 5.5], [118.0, 6.0], [118.5, 6.5],
-      [119.0, 7.0], [119.5, 7.5], [120.0, 8.0], [120.5, 8.5],
-      [121.0, 9.0], [121.5, 9.5], [122.0, 10.0], [122.5, 10.5],
-      [123.0, 11.0], [123.5, 11.5], [124.0, 12.0], [124.5, 12.5],
-      [124.5, 13.0], [124.2, 13.5], [123.8, 14.0], [123.5, 14.5],
-      [123.0, 15.0], [122.5, 15.5], [122.0, 16.0], [121.5, 16.5],
-      [121.0, 17.0], [120.5, 17.5], [120.0, 18.0], [119.8, 18.5],
-      [120.2, 18.2], [120.5, 17.8], [120.3, 17.3], [119.8, 17.0],
-      [119.3, 16.5], [118.8, 16.0], [118.5, 15.5], [118.2, 15.0],
-      [118.0, 14.5], [117.8, 14.0], [117.5, 13.5], [117.2, 13.0],
-      [117.0, 12.5], [116.8, 12.0], [116.5, 11.5], [116.2, 11.0],
-      [116.0, 10.5], [116.0, 10.0], [116.2, 9.5], [116.5, 9.0],
-      [116.5, 8.5], [116.3, 8.0], [116.0, 7.5], [116.0, 7.0],
-      [116.2, 6.5], [116.5, 6.0], [116.8, 5.5], [117.0, 5.0]
-    ]
-  },
-  cambodia: {
-    name: "Cambodia",
-    color: "#6366f1",
-    coordinates: [
-      [102.5, 14.5], [103.0, 14.3], [103.5, 14.2], [104.0, 14.3],
-      [104.5, 14.4], [105.0, 14.3], [105.5, 14.0], [106.0, 13.5],
-      [106.5, 13.0], [106.8, 12.5], [106.5, 12.0], [106.0, 11.5],
-      [105.5, 11.0], [105.0, 10.8], [104.5, 10.5], [104.0, 10.5],
-      [103.5, 10.8], [103.2, 11.2], [103.0, 11.8], [102.8, 12.3],
-      [102.6, 12.8], [102.5, 13.3], [102.4, 13.8], [102.5, 14.5]
-    ]
-  }
+// Real cities with accurate coordinates
+const majorCities = {
+  singapore: { name: "Singapore", lat: 1.3521, lng: 103.8198, color: "#ef4444", description: "Financial Hub & Tech Center" },
+  johorBahru: { name: "Johor Bahru", lat: 1.4927, lng: 103.7414, color: "#3b82f6", description: "JS-SEZ Partner" },
+  kualaLumpur: { name: "Kuala Lumpur", lat: 3.1390, lng: 101.6869, color: "#8b5cf6", description: "Capital of Malaysia" },
+  bangkok: { name: "Bangkok", lat: 13.7563, lng: 100.5018, color: "#f59e0b", description: "Thailand's Capital" },
+  jakarta: { name: "Jakarta", lat: -6.2088, lng: 106.8456, color: "#10b981", description: "Indonesia's Capital" },
+  manila: { name: "Manila", lat: 14.5995, lng: 120.9842, color: "#ec4899", description: "Philippines Capital" },
+  hoChiMinh: { name: "Ho Chi Minh City", lat: 10.8231, lng: 106.6297, color: "#06b6d4", description: "Vietnam's Economic Center" },
+  hanoi: { name: "Hanoi", lat: 21.0285, lng: 105.8542, color: "#14b8a6", description: "Vietnam's Capital" },
+  tokyo: { name: "Tokyo", lat: 35.6762, lng: 139.6503, color: "#f43f5e", description: "Japan's Capital" },
+  shanghai: { name: "Shanghai", lat: 31.2304, lng: 121.4737, color: "#eab308", description: "China's Financial Hub" },
+  hongKong: { name: "Hong Kong", lat: 22.3193, lng: 114.1694, color: "#a855f7", description: "Special Admin Region" },
+  shenzhen: { name: "Shenzhen", lat: 22.5431, lng: 114.0579, color: "#6366f1", description: "Tech Manufacturing Hub" },
+  seoul: { name: "Seoul", lat: 37.5665, lng: 126.9780, color: "#0ea5e9", description: "South Korea's Capital" },
+  taipei: { name: "Taipei", lat: 25.0330, lng: 121.5654, color: "#84cc16", description: "Taiwan's Capital" },
+  newYork: { name: "New York", lat: 40.7128, lng: -74.0060, color: "#3b82f6", description: "US Financial Hub" },
+  london: { name: "London", lat: 51.5074, lng: -0.1278, color: "#6366f1", description: "UK Financial Hub" },
+  dubai: { name: "Dubai", lat: 25.2048, lng: 55.2708, color: "#f97316", description: "UAE Trade Hub" },
+  sydney: { name: "Sydney", lat: -33.8688, lng: 151.2093, color: "#22c55e", description: "Australia's Largest City" },
 };
 
-// Convert lat/lng to 3D position
-function latLngToVector3(lat, lng, radius) {
+// Convert latitude/longitude to 3D position on sphere
+function latLngToVector3(lat, lng, radius = 2) {
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lng + 180) * (Math.PI / 180);
-  return new THREE.Vector3(
-    -radius * Math.sin(phi) * Math.cos(theta),
-    radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.sin(theta)
-  );
+  const x = -radius * Math.sin(phi) * Math.cos(theta);
+  const y = radius * Math.cos(phi);
+  const z = radius * Math.sin(phi) * Math.sin(theta);
+  return new THREE.Vector3(x, y, z);
 }
 
-// Country border component with real coordinates
-function CountryBorder({ coordinates, color, radius = 2.005, lineWidth = 1.5 }) {
-  const points = useMemo(() => {
-    return coordinates.map(([lng, lat]) => latLngToVector3(lat, lng, radius));
-  }, [coordinates, radius]);
+// Create highly detailed Earth texture with realistic appearance
+function createRealisticEarthTexture() {
+  const canvas = document.createElement('canvas');
+  const width = 4096;
+  const height = 2048;
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
 
-  return (
-    <Line
-      points={points}
-      color={color}
-      lineWidth={lineWidth}
-      transparent
-      opacity={0.8}
-    />
-  );
+  // Deep ocean base with realistic color
+  const oceanGradient = ctx.createLinearGradient(0, 0, 0, height);
+  oceanGradient.addColorStop(0, '#0a3d62');
+  oceanGradient.addColorStop(0.25, '#0c4a70');
+  oceanGradient.addColorStop(0.5, '#0e527a');
+  oceanGradient.addColorStop(0.75, '#0c4a70');
+  oceanGradient.addColorStop(1, '#0a3d62');
+  ctx.fillStyle = oceanGradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Add ocean depth variations
+  for (let i = 0; i < 30000; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const r = Math.random() * 8 + 2;
+    const alpha = Math.random() * 0.15;
+    ctx.fillStyle = Math.random() > 0.5 ? `rgba(8, 60, 90, ${alpha})` : `rgba(15, 75, 105, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Helper function to convert geo coordinates to canvas coordinates
+  const geoToCanvas = (lng, lat) => {
+    const x = ((lng + 180) / 360) * width;
+    const y = ((90 - lat) / 180) * height;
+    return [x, y];
+  };
+
+  // Draw landmass with shading
+  const drawLandmass = (coords, baseColor, highlightColor, shadowColor) => {
+    // Main fill
+    ctx.beginPath();
+    const [startX, startY] = geoToCanvas(coords[0][0], coords[0][1]);
+    ctx.moveTo(startX, startY);
+    for (let i = 1; i < coords.length; i++) {
+      const [x, y] = geoToCanvas(coords[i][0], coords[i][1]);
+      ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+
+    // Gradient fill for 3D effect
+    const gradient = ctx.createLinearGradient(startX, startY - 50, startX, startY + 100);
+    gradient.addColorStop(0, highlightColor);
+    gradient.addColorStop(0.5, baseColor);
+    gradient.addColorStop(1, shadowColor);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = 'rgba(40, 80, 60, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  };
+
+  // Continent coordinates (longitude, latitude) - more accurate shapes
+
+  // North America
+  const northAmerica = [
+    [-170, 65], [-168, 58], [-155, 58], [-140, 60], [-130, 55],
+    [-125, 50], [-124, 45], [-117, 35], [-110, 30], [-105, 25],
+    [-100, 25], [-97, 26], [-97, 22], [-90, 20], [-87, 18],
+    [-83, 10], [-80, 8], [-77, 8], [-82, 15], [-83, 22],
+    [-80, 25], [-82, 28], [-80, 32], [-75, 36], [-70, 42],
+    [-67, 45], [-65, 47], [-60, 47], [-55, 52], [-58, 55],
+    [-65, 60], [-73, 65], [-85, 70], [-95, 73], [-110, 73],
+    [-125, 72], [-140, 70], [-155, 68], [-165, 67], [-170, 65]
+  ];
+  drawLandmass(northAmerica, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Greenland
+  const greenland = [
+    [-45, 60], [-42, 65], [-35, 72], [-25, 78], [-20, 82],
+    [-30, 83], [-45, 82], [-55, 78], [-60, 72], [-55, 65],
+    [-50, 60], [-45, 60]
+  ];
+  drawLandmass(greenland, '#4a7a5a', '#5a9a6a', '#3a6a4a');
+
+  // South America
+  const southAmerica = [
+    [-80, 10], [-77, 8], [-73, 5], [-70, 3], [-60, 5],
+    [-52, 3], [-45, 0], [-40, -3], [-35, -8], [-35, -15],
+    [-38, -18], [-42, -22], [-48, -25], [-53, -30], [-58, -35],
+    [-63, -40], [-65, -50], [-68, -55], [-72, -52], [-72, -45],
+    [-70, -40], [-72, -30], [-70, -20], [-75, -15], [-78, -5],
+    [-78, 0], [-80, 5], [-80, 10]
+  ];
+  drawLandmass(southAmerica, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Europe
+  const europe = [
+    [-10, 58], [-8, 62], [0, 60], [10, 58], [20, 55],
+    [28, 58], [35, 60], [45, 65], [55, 68], [65, 67],
+    [70, 62], [60, 55], [50, 52], [40, 48], [35, 42],
+    [28, 38], [22, 36], [18, 38], [12, 38], [8, 42],
+    [5, 45], [2, 48], [-4, 48], [-8, 50], [-10, 55], [-10, 58]
+  ];
+  drawLandmass(europe, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Africa
+  const africa = [
+    [-15, 35], [-12, 32], [-5, 36], [10, 37], [12, 33],
+    [25, 32], [32, 30], [35, 28], [38, 22], [42, 15],
+    [48, 10], [52, 12], [48, 5], [42, -2], [40, -10],
+    [38, -18], [35, -25], [28, -33], [22, -35], [18, -32],
+    [15, -28], [14, -22], [12, -15], [15, -8], [12, 0],
+    [8, 5], [3, 6], [-5, 5], [-10, 8], [-15, 12],
+    [-17, 18], [-17, 22], [-13, 28], [-15, 35]
+  ];
+  drawLandmass(africa, '#3d6a4d', '#4d8a5d', '#2d5a3d');
+
+  // Middle East
+  const middleEast = [
+    [35, 42], [42, 38], [50, 38], [55, 35], [60, 30],
+    [65, 25], [60, 20], [55, 15], [50, 12], [45, 15],
+    [40, 20], [35, 28], [35, 35], [35, 42]
+  ];
+  drawLandmass(middleEast, '#5a7a5a', '#6a9a6a', '#4a6a4a');
+
+  // Russia / North Asia
+  const russia = [
+    [28, 58], [40, 55], [55, 55], [70, 55], [85, 52],
+    [100, 50], [120, 52], [140, 55], [155, 60], [170, 65],
+    [180, 68], [180, 75], [160, 78], [140, 77], [120, 75],
+    [100, 75], [80, 73], [60, 70], [45, 68], [35, 62],
+    [28, 58]
+  ];
+  drawLandmass(russia, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Central & South Asia
+  const centralAsia = [
+    [55, 55], [70, 55], [85, 50], [90, 45], [80, 38],
+    [75, 35], [70, 35], [65, 38], [60, 42], [55, 50],
+    [55, 55]
+  ];
+  drawLandmass(centralAsia, '#4a6a4a', '#5a8a5a', '#3a5a3a');
+
+  // India
+  const india = [
+    [68, 35], [73, 33], [78, 35], [85, 28], [90, 26],
+    [92, 22], [88, 22], [85, 18], [80, 12], [77, 8],
+    [75, 10], [72, 18], [68, 23], [68, 30], [68, 35]
+  ];
+  drawLandmass(india, '#3d6a4d', '#4d8a5d', '#2d5a3d');
+
+  // Southeast Asia mainland - highlighted
+  const seAsiaMainland = [
+    [92, 28], [98, 26], [100, 22], [102, 18], [103, 14],
+    [104, 10], [106, 8], [108, 10], [108, 16], [106, 21],
+    [103, 23], [100, 26], [95, 28], [92, 28]
+  ];
+  drawLandmass(seAsiaMainland, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // Malaysia Peninsula - highlighted
+  const malaysiaPeninsula = [
+    [100, 7], [101, 6], [103, 5], [104, 3], [104, 1.5],
+    [103.5, 1.2], [102, 1.5], [101, 2.5], [100, 4], [100, 7]
+  ];
+  drawLandmass(malaysiaPeninsula, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // Borneo - highlighted
+  const borneo = [
+    [109, 7], [114, 7], [118, 5], [119, 2], [117, -1],
+    [115, -4], [112, -3], [109, -1], [109, 3], [110, 5], [109, 7]
+  ];
+  drawLandmass(borneo, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // Sumatra - highlighted
+  const sumatra = [
+    [95, 5.5], [97, 4], [100, 1], [103, -2], [106, -6],
+    [104, -6], [101, -3], [98, 0], [96, 2], [95, 4], [95, 5.5]
+  ];
+  drawLandmass(sumatra, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // Java
+  const java = [
+    [105, -6], [108, -6.5], [111, -7], [114, -7.5], [115, -8.2],
+    [113, -8.5], [109, -8], [106, -7], [105, -6]
+  ];
+  drawLandmass(java, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // Philippines - highlighted
+  const philippines = [
+    [117, 6], [119, 8], [121, 10], [123, 13], [125, 16],
+    [124, 18], [122, 18], [120, 16], [119, 13], [118, 10],
+    [117, 8], [117, 6]
+  ];
+  drawLandmass(philippines, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // China
+  const china = [
+    [85, 50], [95, 45], [105, 42], [115, 40], [122, 42],
+    [128, 45], [135, 48], [135, 42], [127, 38], [122, 35],
+    [118, 30], [115, 25], [110, 22], [108, 20], [106, 22],
+    [103, 23], [100, 26], [95, 28], [85, 35], [80, 38],
+    [85, 50]
+  ];
+  drawLandmass(china, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Japan
+  const japan = [
+    [130, 31], [132, 34], [135, 35], [137, 36], [140, 38],
+    [141, 42], [145, 45], [145, 42], [142, 38], [140, 35],
+    [138, 33], [134, 33], [130, 31]
+  ];
+  drawLandmass(japan, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Korea
+  const korea = [
+    [126, 34], [127, 36], [129, 38], [130, 40], [128, 42],
+    [125, 40], [124, 37], [126, 34]
+  ];
+  drawLandmass(korea, '#2d5a3d', '#3d7a4d', '#1d4a2d');
+
+  // Taiwan
+  const taiwan = [
+    [120, 22], [121, 23], [122, 25], [121.5, 25.5], [120, 24], [120, 22]
+  ];
+  drawLandmass(taiwan, '#3a8a5a', '#4aaa6a', '#2a7a4a');
+
+  // Australia
+  const australia = [
+    [113, -22], [117, -20], [123, -17], [130, -12], [137, -12],
+    [142, -11], [145, -15], [149, -20], [153, -27], [151, -34],
+    [145, -39], [140, -38], [135, -35], [130, -32], [125, -34],
+    [120, -34], [116, -33], [114, -28], [113, -24], [113, -22]
+  ];
+  drawLandmass(australia, '#4d6a4d', '#5d8a5d', '#3d5a3d');
+
+  // New Zealand
+  const nzNorth = [
+    [173, -35], [175, -37], [178, -38], [177, -40], [175, -41], [173, -39], [173, -35]
+  ];
+  const nzSouth = [
+    [168, -44], [170, -43], [174, -42], [173, -44], [171, -46], [167, -46], [168, -44]
+  ];
+  drawLandmass(nzNorth, '#3d6a4d', '#4d8a5d', '#2d5a3d');
+  drawLandmass(nzSouth, '#3d6a4d', '#4d8a5d', '#2d5a3d');
+
+  // Add terrain texture noise
+  for (let i = 0; i < 15000; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const size = Math.random() * 3 + 1;
+    ctx.fillStyle = `rgba(40, 80, 50, ${Math.random() * 0.15})`;
+    ctx.fillRect(x, y, size, size);
+  }
+
+  // Add subtle grid lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+  ctx.lineWidth = 0.5;
+
+  // Longitude lines every 30 degrees
+  for (let lng = -180; lng <= 180; lng += 30) {
+    const x = ((lng + 180) / 360) * width;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+
+  // Latitude lines every 30 degrees
+  for (let lat = -90; lat <= 90; lat += 30) {
+    const y = ((90 - lat) / 180) * height;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  // Equator (more visible)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, height / 2);
+  ctx.lineTo(width, height / 2);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
 }
 
-// Location marker with real position
-function CityMarker({ lat, lng, label, color = "#ef4444", radius = 2, isActive, onClick }) {
-  const position = useMemo(() => latLngToVector3(lat, lng, radius + 0.02), [lat, lng, radius]);
+// City marker component
+function CityMarker({ city, position, isHighlighted, onClick }) {
+  const markerRef = useRef();
+  const ringRef = useRef();
   const [hovered, setHovered] = useState(false);
-  const pulseRef = useRef();
-  const glowRef = useRef();
 
   useFrame((state) => {
-    if (pulseRef.current) {
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.3;
-      pulseRef.current.scale.setScalar(scale);
-      pulseRef.current.material.opacity = 0.6 - Math.sin(state.clock.elapsedTime * 3) * 0.2;
+    if (markerRef.current) {
+      const scale = (hovered || isHighlighted) ? 1.8 : 1;
+      markerRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1);
     }
-    if (glowRef.current) {
-      glowRef.current.material.opacity = 0.3 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+    if (ringRef.current) {
+      ringRef.current.rotation.z = state.clock.elapsedTime * 2;
+      const pulse = 1 + Math.sin(state.clock.elapsedTime * 4) * 0.3;
+      ringRef.current.scale.setScalar(pulse);
     }
   });
+
+  const normal = position.clone().normalize();
 
   return (
     <group position={position}>
       {/* Main marker */}
       <mesh
-        onClick={onClick}
+        ref={markerRef}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
+        onClick={() => onClick && onClick(city)}
       >
         <sphereGeometry args={[0.025, 16, 16]} />
-        <meshStandardMaterial
-          color={hovered || isActive ? "#ffffff" : color}
-          emissive={color}
-          emissiveIntensity={1}
-        />
+        <meshBasicMaterial color={city.color} />
       </mesh>
 
       {/* Glow effect */}
-      <mesh ref={glowRef}>
-        <sphereGeometry args={[0.04, 16, 16]} />
-        <meshBasicMaterial color={color} transparent opacity={0.3} />
+      <mesh>
+        <sphereGeometry args={[0.035, 16, 16]} />
+        <meshBasicMaterial color={city.color} transparent opacity={0.4} />
       </mesh>
 
-      {/* Pulse ring */}
-      <mesh ref={pulseRef} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.03, 0.05, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.5} side={THREE.DoubleSide} />
+      {/* Pulsing ring */}
+      <mesh ref={ringRef} lookAt={normal.multiplyScalar(5)}>
+        <ringGeometry args={[0.04, 0.055, 32]} />
+        <meshBasicMaterial color={city.color} transparent opacity={0.5} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Label */}
-      {(hovered || isActive) && label && (
-        <Html distanceFactor={4} style={{ pointerEvents: 'none' }}>
-          <div className="px-3 py-2 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-medium rounded-lg border border-white/10 shadow-xl whitespace-nowrap transform -translate-y-6">
-            {label}
+      {/* Label on hover */}
+      {(hovered || isHighlighted) && (
+        <Html position={[0.08, 0.08, 0]} distanceFactor={3.5}>
+          <div className="bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl text-sm whitespace-nowrap border border-slate-600/50 shadow-xl">
+            <div className="font-bold text-base" style={{ color: city.color }}>{city.name}</div>
+            <div className="text-slate-400 text-xs mt-1">{city.description}</div>
           </div>
         </Html>
       )}
@@ -212,291 +386,175 @@ function CityMarker({ lat, lng, label, color = "#ef4444", radius = 2, isActive, 
 }
 
 // Connection arc between cities
-function FlightPath({ from, to, color = "#fbbf24", radius = 2.01 }) {
-  const [progress, setProgress] = useState(0);
+function ConnectionArc({ startCity, endCity, color = "#fbbf24" }) {
   const particleRef = useRef();
 
-  const curve = useMemo(() => {
-    const start = latLngToVector3(from.lat, from.lng, radius);
-    const end = latLngToVector3(to.lat, to.lng, radius);
-    const mid = start.clone().add(end).multiplyScalar(0.5);
-    const distance = start.distanceTo(end);
-    mid.normalize().multiplyScalar(radius + distance * 0.15);
-    return new THREE.QuadraticBezierCurve3(start, mid, end);
-  }, [from, to, radius]);
+  const start = useMemo(() => latLngToVector3(startCity.lat, startCity.lng, 2.02), [startCity]);
+  const end = useMemo(() => latLngToVector3(endCity.lat, endCity.lng, 2.02), [endCity]);
 
-  const points = useMemo(() => curve.getPoints(64), [curve]);
+  const curve = useMemo(() => {
+    const midPoint = start.clone().add(end).multiplyScalar(0.5);
+    const distance = start.distanceTo(end);
+    midPoint.normalize().multiplyScalar(2 + distance * 0.25);
+    return new THREE.QuadraticBezierCurve3(start, midPoint, end);
+  }, [start, end]);
+
+  const points = useMemo(() => curve.getPoints(60), [curve]);
 
   useFrame((state) => {
-    const newProgress = (state.clock.elapsedTime * 0.15) % 1;
-    setProgress(newProgress);
     if (particleRef.current) {
-      const point = curve.getPoint(newProgress);
+      const t = (state.clock.elapsedTime * 0.12) % 1;
+      const point = curve.getPoint(t);
       particleRef.current.position.copy(point);
     }
   });
 
   return (
     <group>
-      <Line points={points} color={color} lineWidth={1.5} transparent opacity={0.5} />
+      <Line points={points} color={color} lineWidth={1.5} transparent opacity={0.35} />
       <mesh ref={particleRef}>
-        <sphereGeometry args={[0.015, 8, 8]} />
+        <sphereGeometry args={[0.02, 8, 8]} />
         <meshBasicMaterial color={color} />
       </mesh>
     </group>
   );
 }
 
-// Realistic Earth with NASA-style texture
-function RealisticEarth({ locations, connections, activeLocation, onLocationClick, autoRotate }) {
+// Main Earth component
+function Earth({ highlightedCity, onCityClick, showConnections = true, autoRotate = true }) {
   const earthRef = useRef();
+  const atmosphereRef = useRef();
+
+  const earthTexture = useMemo(() => createRealisticEarthTexture(), []);
 
   useFrame((state, delta) => {
     if (autoRotate && earthRef.current) {
-      earthRef.current.rotation.y += delta * 0.05;
+      earthRef.current.rotation.y += delta * 0.03;
     }
   });
 
-  // Create detailed Earth texture
-  const earthTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 4096;
-    canvas.height = 2048;
-    const ctx = canvas.getContext('2d');
-
-    // Deep ocean base
-    const oceanGradient = ctx.createRadialGradient(
-      canvas.width / 2, canvas.height / 2, 0,
-      canvas.width / 2, canvas.height / 2, canvas.width
-    );
-    oceanGradient.addColorStop(0, '#0a1929');
-    oceanGradient.addColorStop(0.5, '#0d2137');
-    oceanGradient.addColorStop(1, '#0a1929');
-    ctx.fillStyle = oceanGradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Ocean texture noise
-    for (let i = 0; i < 15000; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const size = Math.random() * 3 + 1;
-      ctx.fillStyle = `rgba(16, 42, 67, ${Math.random() * 0.4})`;
-      ctx.fillRect(x, y, size, size);
-    }
-
-    // Continent colors
-    const landColor = '#1a3d2e';
-    const landHighlight = '#234d3a';
-    const landShadow = '#122a1f';
-
-    // Draw realistic continent shapes
-    const drawContinent = (path, color) => {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      path.forEach(([x, y], i) => {
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.closePath();
-      ctx.fill();
-    };
-
-    // North America (more detailed)
-    drawContinent([
-      [680, 280], [720, 250], [780, 220], [850, 200], [920, 210],
-      [980, 250], [1020, 300], [1050, 370], [1080, 450], [1050, 520],
-      [1000, 580], [950, 600], [900, 580], [850, 550], [800, 520],
-      [750, 500], [700, 480], [650, 460], [600, 440], [560, 400],
-      [540, 360], [550, 320], [580, 290], [620, 270], [680, 280]
-    ], landColor);
-
-    // South America
-    drawContinent([
-      [900, 600], [920, 650], [950, 720], [970, 800], [960, 880],
-      [930, 960], [880, 1020], [820, 1060], [770, 1040], [740, 980],
-      [720, 900], [710, 820], [730, 750], [770, 690], [820, 640],
-      [860, 610], [900, 600]
-    ], landColor);
-
-    // Europe
-    drawContinent([
-      [1950, 280], [2020, 260], [2100, 270], [2160, 300], [2200, 350],
-      [2180, 400], [2140, 440], [2080, 460], [2020, 450], [1970, 420],
-      [1940, 380], [1920, 340], [1930, 300], [1950, 280]
-    ], landColor);
-
-    // Africa
-    drawContinent([
-      [1980, 480], [2050, 460], [2120, 480], [2180, 520], [2220, 600],
-      [2240, 700], [2220, 800], [2180, 880], [2120, 940], [2050, 960],
-      [1980, 940], [1920, 880], [1880, 800], [1880, 700], [1900, 600],
-      [1940, 540], [1980, 480]
-    ], landColor);
-
-    // Asia (main mass)
-    drawContinent([
-      [2200, 280], [2300, 250], [2450, 230], [2600, 250], [2750, 300],
-      [2900, 380], [3000, 450], [3050, 530], [3020, 600], [2950, 650],
-      [2850, 680], [2750, 670], [2650, 640], [2550, 600], [2480, 550],
-      [2420, 500], [2380, 450], [2350, 400], [2320, 350], [2280, 310],
-      [2240, 290], [2200, 280]
-    ], landColor);
-
-    // India
-    drawContinent([
-      [2650, 520], [2700, 500], [2750, 520], [2780, 580], [2800, 660],
-      [2780, 740], [2730, 800], [2670, 820], [2620, 780], [2600, 720],
-      [2600, 660], [2610, 600], [2630, 560], [2650, 520]
-    ], landColor);
-
-    // Southeast Asia (detailed)
-    drawContinent([
-      [2900, 580], [2950, 560], [3000, 580], [3040, 620], [3060, 680],
-      [3050, 740], [3010, 800], [2960, 840], [2900, 860], [2850, 840],
-      [2820, 800], [2810, 740], [2830, 680], [2860, 620], [2900, 580]
-    ], landHighlight);
-
-    // Indonesia archipelago
-    for (let i = 0; i < 8; i++) {
-      const x = 2950 + i * 80 + Math.random() * 40;
-      const y = 900 + Math.random() * 60;
-      const w = 60 + Math.random() * 40;
-      const h = 20 + Math.random() * 20;
-      ctx.fillStyle = landColor;
-      ctx.beginPath();
-      ctx.ellipse(x, y, w, h, Math.random() * 0.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Australia
-    drawContinent([
-      [3200, 880], [3300, 850], [3400, 870], [3480, 920], [3520, 1000],
-      [3500, 1080], [3440, 1140], [3360, 1160], [3280, 1140], [3220, 1100],
-      [3180, 1040], [3170, 980], [3180, 920], [3200, 880]
-    ], landColor);
-
-    // Add terrain texture
-    for (let i = 0; i < 8000; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const size = Math.random() * 4 + 1;
-      ctx.fillStyle = `rgba(30, 70, 50, ${Math.random() * 0.3})`;
-      ctx.fillRect(x, y, size, size);
-    }
-
-    // Latitude/longitude grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-    ctx.lineWidth = 1;
-
-    // Longitude lines
-    for (let i = 0; i <= 36; i++) {
-      const x = (i / 36) * canvas.width;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-
-    // Latitude lines
-    for (let i = 0; i <= 18; i++) {
-      const y = (i / 18) * canvas.height;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
+  // City positions
+  const cityPositions = useMemo(() => {
+    const positions = {};
+    Object.entries(majorCities).forEach(([key, city]) => {
+      positions[key] = latLngToVector3(city.lat, city.lng, 2.03);
+    });
+    return positions;
   }, []);
+
+  // Trade connections centered on Singapore
+  const connections = [
+    { from: 'singapore', to: 'johorBahru', color: '#10b981' },
+    { from: 'singapore', to: 'kualaLumpur', color: '#8b5cf6' },
+    { from: 'singapore', to: 'jakarta', color: '#f59e0b' },
+    { from: 'singapore', to: 'bangkok', color: '#06b6d4' },
+    { from: 'singapore', to: 'hoChiMinh', color: '#ec4899' },
+    { from: 'singapore', to: 'manila', color: '#f43f5e' },
+    { from: 'singapore', to: 'hongKong', color: '#a855f7' },
+    { from: 'singapore', to: 'shanghai', color: '#eab308' },
+    { from: 'singapore', to: 'tokyo', color: '#3b82f6' },
+    { from: 'singapore', to: 'dubai', color: '#f97316' },
+    { from: 'singapore', to: 'sydney', color: '#22c55e' },
+  ];
 
   return (
     <group ref={earthRef}>
-      {/* Main Earth */}
+      {/* Earth sphere */}
       <mesh>
         <sphereGeometry args={[2, 128, 128]} />
         <meshStandardMaterial
           map={earthTexture}
           metalness={0.1}
-          roughness={0.9}
+          roughness={0.85}
         />
       </mesh>
 
-      {/* Country borders */}
-      {Object.values(seaCountryBorders).map((country) => (
-        <CountryBorder
-          key={country.name}
-          coordinates={country.coordinates}
-          color={country.color}
-        />
-      ))}
-
-      {/* Atmosphere inner */}
-      <mesh scale={[1.01, 1.01, 1.01]}>
+      {/* Inner atmosphere */}
+      <mesh ref={atmosphereRef} scale={1.015}>
         <sphereGeometry args={[2, 64, 64]} />
-        <meshBasicMaterial color="#4da6ff" transparent opacity={0.05} side={THREE.BackSide} />
+        <meshBasicMaterial
+          color="#4da6ff"
+          transparent
+          opacity={0.06}
+          side={THREE.BackSide}
+        />
       </mesh>
 
-      {/* Atmosphere outer glow */}
-      <mesh scale={[1.04, 1.04, 1.04]}>
+      {/* Outer atmosphere glow */}
+      <mesh scale={1.06}>
         <sphereGeometry args={[2, 32, 32]} />
-        <meshBasicMaterial color="#1e90ff" transparent opacity={0.03} side={THREE.BackSide} />
+        <meshBasicMaterial
+          color="#1e90ff"
+          transparent
+          opacity={0.04}
+          side={THREE.BackSide}
+        />
       </mesh>
 
       {/* City markers */}
-      {locations.map((loc, i) => (
+      {Object.entries(majorCities).map(([key, city]) => (
         <CityMarker
-          key={i}
-          lat={loc.lat}
-          lng={loc.lng}
-          label={loc.label}
-          color={loc.color}
-          isActive={activeLocation?.label === loc.label}
-          onClick={() => onLocationClick?.(loc)}
+          key={key}
+          city={city}
+          position={cityPositions[key]}
+          isHighlighted={highlightedCity === key}
+          onClick={onCityClick}
         />
       ))}
 
-      {/* Flight paths */}
-      {connections.map((conn, i) => (
-        <FlightPath key={i} from={conn.from} to={conn.to} color={conn.color} />
+      {/* Trade connections */}
+      {showConnections && connections.map((conn, i) => (
+        <ConnectionArc
+          key={i}
+          startCity={majorCities[conn.from]}
+          endCity={majorCities[conn.to]}
+          color={conn.color}
+        />
       ))}
     </group>
   );
 }
 
 export default function RealGlobe({
-  locations = [],
-  connections = [],
-  activeLocation,
-  onLocationClick,
   height = "500px",
   className = "",
+  showStars = true,
   autoRotate = true,
-  showStars = true
+  onCityClick,
+  highlightedCity = null,
+  showConnections = true
 }) {
   return (
     <div className={`w-full ${className}`} style={{ height }}>
-      <Canvas camera={{ position: [0, 0, 4.5], fov: 45 }}>
-        <ambientLight intensity={0.3} />
-        <directionalLight position={[5, 3, 5]} intensity={0.6} />
-        <pointLight position={[-10, -10, -10]} intensity={0.15} color="#4da6ff" />
+      <Canvas camera={{ position: [0, 1, 5], fov: 45 }}>
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[5, 3, 5]} intensity={0.8} color="#ffffff" />
+        <pointLight position={[-10, 5, -10]} intensity={0.2} color="#4da6ff" />
 
-        {showStars && <Stars radius={100} depth={50} count={3000} factor={4} fade speed={0.5} />}
+        {showStars && (
+          <Stars
+            radius={150}
+            depth={60}
+            count={4000}
+            factor={5}
+            fade
+            speed={0.5}
+          />
+        )}
 
-        <RealisticEarth
-          locations={locations}
-          connections={connections}
-          activeLocation={activeLocation}
-          onLocationClick={onLocationClick}
+        <Earth
+          highlightedCity={highlightedCity}
+          onCityClick={onCityClick}
+          showConnections={showConnections}
           autoRotate={autoRotate}
         />
 
         <OrbitControls
           enableZoom={true}
           enablePan={false}
-          minDistance={3}
-          maxDistance={8}
+          minDistance={3.5}
+          maxDistance={10}
+          autoRotate={false}
           enableDamping
           dampingFactor={0.05}
         />
