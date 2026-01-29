@@ -1,467 +1,855 @@
-import React, { Suspense } from "react";
-import { BrowserRouter, Routes, Route, NavLink, useNavigate } from "react-router-dom";
-import Globe3D from "./components/Globe3D";
-import RegionMap3D from "./components/RegionMap3D";
+import React, { Suspense, useState, useEffect, createContext, useContext } from "react";
+import { BrowserRouter, Routes, Route, NavLink, useLocation, useNavigate } from "react-router-dom";
+import EarthGlobe from "./components/EarthGlobe";
+import SEAMap3D from "./components/SEAMap3D";
+import Timeline3DNew from "./components/Timeline3DNew";
 import SupplyChain3D from "./components/SupplyChain3D";
 
-/*
-  Full multi-page replica (single-file preview)
-  - React + Tailwind (canvas loads Tailwind automatically)
-  - React Router for navigation
-  - Gamma-like dark UI
-  - All pages defined below in one file so you can preview here
-*/
+// Theme context for dynamic colors
+const ThemeContext = createContext();
+
+const themes = {
+  home: { primary: "#ef4444", secondary: "#3b82f6", accent: "#fbbf24", bg: "from-slate-950 via-slate-900 to-slate-950" },
+  context: { primary: "#8b5cf6", secondary: "#ec4899", accent: "#f59e0b", bg: "from-purple-950 via-slate-900 to-slate-950" },
+  history: { primary: "#f59e0b", secondary: "#ef4444", accent: "#10b981", bg: "from-amber-950 via-slate-900 to-slate-950" },
+  regional: { primary: "#10b981", secondary: "#3b82f6", accent: "#fbbf24", bg: "from-emerald-950 via-slate-900 to-slate-950" },
+  global: { primary: "#3b82f6", secondary: "#8b5cf6", accent: "#ef4444", bg: "from-blue-950 via-slate-900 to-slate-950" },
+  political: { primary: "#ec4899", secondary: "#8b5cf6", accent: "#10b981", bg: "from-pink-950 via-slate-900 to-slate-950" },
+  conclusion: { primary: "#fbbf24", secondary: "#ef4444", accent: "#3b82f6", bg: "from-yellow-950 via-slate-900 to-slate-950" },
+};
+
+function ThemeProvider({ children }) {
+  const location = useLocation();
+  const [theme, setTheme] = useState(themes.home);
+
+  useEffect(() => {
+    const path = location.pathname.split('/')[1] || 'home';
+    const themeMap = {
+      '': 'home',
+      'context': 'context',
+      'history': 'history',
+      'regional': 'regional',
+      'global': 'global',
+      'political': 'political',
+      'conclusion': 'conclusion',
+    };
+    setTheme(themes[themeMap[path] || 'home']);
+  }, [location]);
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      <div className={`min-h-screen bg-gradient-to-br ${theme.bg} text-white transition-all duration-1000`}>
+        {children}
+      </div>
+    </ThemeContext.Provider>
+  );
+}
+
+function useTheme() {
+  return useContext(ThemeContext);
+}
 
 export default function App() {
   return (
     <BrowserRouter basename="/Rewiring-Asia-s-Supply-Chains">
-      <div className="min-h-screen bg-[#0b0f19] text-white antialiased">
-        <Navbar />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/context" element={<Context />} />
-            <Route path="/china" element={<China />} />
-            <Route path="/resilience" element={<Resilience />} />
-            <Route path="/china-plus-one" element={<ChinaPlusOne />} />
-            <Route path="/sovereignty" element={<Sovereignty />} />
-            <Route path="/chokepoints" element={<Chokepoints />} />
-            <Route path="/critical-perspectives" element={<Critical />} />
-            <Route path="/case-studies" element={<CaseStudies />} />
-            <Route path="/conclusion" element={<Conclusion />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <ThemeProvider>
+        <div className="min-h-screen antialiased">
+          <Navbar />
+          <main>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/context" element={<Context />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/regional" element={<Regional />} />
+              <Route path="/global" element={<Global />} />
+              <Route path="/political" element={<Political />} />
+              <Route path="/conclusion" element={<Conclusion />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
 
-/* ---------------- NAV + LAYOUT ---------------- */
+/* ==================== NAVBAR ==================== */
 function Navbar() {
+  const theme = useTheme();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const links = [
     { to: "/", label: "Home" },
     { to: "/context", label: "Context" },
-    { to: "/china", label: "China" },
-    { to: "/resilience", label: "Resilience" },
-    { to: "/china-plus-one", label: "China+1" },
-    { to: "/sovereignty", label: "Sovereignty" },
-    { to: "/chokepoints", label: "Chokepoints" },
-    { to: "/critical-perspectives", label: "Critical" },
-    { to: "/case-studies", label: "Case Studies" },
+    { to: "/history", label: "History" },
+    { to: "/regional", label: "Regional" },
+    { to: "/global", label: "Global" },
+    { to: "/political", label: "Political" },
     { to: "/conclusion", label: "Conclusion" },
   ];
+
   return (
-    <header className="sticky top-0 z-50 bg-[#0b0f19]/70 backdrop-blur border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
-        <NavLink to="/" className="font-semibold tracking-tight">Rewiring Asia</NavLink>
-        <nav className="hidden lg:flex gap-2 text-sm">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-xl transition ${
-                  isActive ? "bg-white/10 text-white" : "text-white/70 hover:text-white hover:bg-white/5"
-                }`
-              }
-            >
-              {l.label}
-            </NavLink>
-          ))}
-        </nav>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-black/80 backdrop-blur-xl' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <NavLink to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
+                 style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}>
+              <span className="text-white font-bold text-lg">JS</span>
+            </div>
+            <span className="font-bold text-xl tracking-tight hidden sm:block">JS-SEZ</span>
+          </NavLink>
+
+          <nav className="hidden lg:flex items-center gap-1">
+            {links.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? 'text-white'
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                  }`
+                }
+                style={({ isActive }) => isActive ? { background: `linear-gradient(135deg, ${theme.primary}40, ${theme.secondary}40)` } : {}}
+              >
+                {l.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       </div>
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className="h-px w-full transition-all duration-500"
+           style={{ background: `linear-gradient(90deg, transparent, ${theme.primary}50, ${theme.secondary}50, transparent)` }} />
     </header>
   );
 }
 
-function Container({ children }) {
-  return <div className="max-w-6xl mx-auto px-5">{children}</div>;
+/* ==================== SHARED COMPONENTS ==================== */
+function Container({ children, className = "" }) {
+  return <div className={`max-w-7xl mx-auto px-6 ${className}`}>{children}</div>;
 }
-function Section({ children }) {
-  return (
-    <section className="border-t border-white/10 py-14">
-      <Container>{children}</Container>
-    </section>
-  );
+
+function Section({ children, className = "" }) {
+  return <section className={`py-20 ${className}`}><Container>{children}</Container></section>;
 }
-function H1({ children }) { return <h1 className="text-4xl md:text-6xl font-bold leading-tight">{children}</h1>; }
-function H2({ children }) { return <h2 className="text-2xl md:text-3xl font-semibold">{children}</h2>; }
-function Eyebrow({ children }) { return <p className="uppercase tracking-wide text-xs text-white/60 mb-2">{children}</p>; }
-function P({ children }) { return <p className="text-white/80 max-w-3xl">{children}</p>; }
-function Card({ children, className = "" }) { return <div className={`rounded-2xl bg-white/5 border border-white/10 p-5 ${className}`}>{children}</div>; }
-function Stat({ v, l }) { return (
-  <div className="rounded-2xl bg-white/5 p-5 text-center">
-    <div className="text-3xl font-bold">{v}</div>
-    <div className="text-xs text-white/70">{l}</div>
-  </div>
-); }
-function PrimaryBtn({ to, children }) {
+
+function GradientText({ children, className = "" }) {
+  const theme = useTheme();
   return (
-    <NavLink to={to} className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20">
+    <span className={`bg-clip-text text-transparent bg-gradient-to-r ${className}`}
+          style={{ backgroundImage: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}>
       {children}
-    </NavLink>
+    </span>
   );
 }
-function GhostBtn({ to, children }) {
+
+function Card({ children, className = "", hover = true }) {
+  const theme = useTheme();
   return (
-    <NavLink to={to} className="px-5 py-3 rounded-xl border border-white/15 hover:bg-white/5">
+    <div className={`rounded-2xl p-6 backdrop-blur-sm border transition-all duration-300 ${hover ? 'hover:scale-[1.02] hover:border-white/30' : ''} ${className}`}
+         style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}>
+      {children}
+    </div>
+  );
+}
+
+function StatCard({ value, label, icon }) {
+  const theme = useTheme();
+  return (
+    <Card className="text-center">
+      <div className="text-4xl font-bold mb-2" style={{ color: theme.primary }}>{value}</div>
+      <div className="text-white/70 text-sm">{label}</div>
+    </Card>
+  );
+}
+
+function Button({ to, children, variant = "primary" }) {
+  const theme = useTheme();
+  const baseClasses = "px-6 py-3 rounded-xl font-medium transition-all duration-300 inline-flex items-center gap-2";
+
+  if (variant === "primary") {
+    return (
+      <NavLink to={to} className={`${baseClasses} text-white hover:scale-105`}
+               style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}>
+        {children}
+      </NavLink>
+    );
+  }
+
+  return (
+    <NavLink to={to} className={`${baseClasses} border border-white/20 hover:bg-white/10 text-white`}>
       {children}
     </NavLink>
   );
 }
 
-/* ---------------- HOME ---------------- */
+function Loading3D() {
+  const theme = useTheme();
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="animate-spin w-12 h-12 rounded-full border-4 border-white/20"
+           style={{ borderTopColor: theme.primary }} />
+    </div>
+  );
+}
+
+/* ==================== HOME PAGE ==================== */
 function Home() {
-  const globePoints = [
+  const theme = useTheme();
+
+  const locations = [
     { lat: 1.3521, lng: 103.8198, label: "Singapore", color: "#ef4444" },
-    { lat: 1.4927, lng: 103.7414, label: "Johor", color: "#3b82f6" },
+    { lat: 1.4927, lng: 103.7414, label: "Johor Bahru", color: "#3b82f6" },
     { lat: 3.139, lng: 101.6869, label: "Kuala Lumpur", color: "#fbbf24" },
     { lat: 13.7563, lng: 100.5018, label: "Bangkok", color: "#10b981" },
     { lat: 21.0285, lng: 105.8542, label: "Hanoi", color: "#8b5cf6" },
+    { lat: -6.2088, lng: 106.8456, label: "Jakarta", color: "#ec4899" },
+    { lat: 31.2304, lng: 121.4737, label: "Shanghai", color: "#f59e0b" },
+    { lat: 22.3193, lng: 114.1694, label: "Hong Kong", color: "#06b6d4" },
   ];
 
   const connections = [
     { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 1.4927, lng: 103.7414 }, color: "#fbbf24" },
     { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 3.139, lng: 101.6869 }, color: "#3b82f6" },
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 31.2304, lng: 121.4737 }, color: "#ef4444" },
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: -6.2088, lng: 106.8456 }, color: "#10b981" },
   ];
 
   return (
     <>
-      <section className="relative overflow-hidden">
+      {/* Hero Section */}
+      <section className="min-h-screen relative flex items-center pt-20">
         <Container>
-          <div className="py-10 md:py-16 grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <Eyebrow>Johor-Singapore Special Economic Zone</Eyebrow>
-              <H1>JS-SEZ:<br/>Rewiring Asia's Supply Chains</H1>
-              <p className="mt-4 text-lg text-white/80 max-w-2xl">
-                Exploring the impact of the Johor-Singapore SEZ on Southeast Asia's competitiveness in global value chains.
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div>
+                <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>
+                  Johor-Singapore Special Economic Zone
+                </p>
+                <h1 className="text-5xl md:text-7xl font-bold leading-tight">
+                  <GradientText>Rewiring</GradientText>
+                  <br />
+                  Asia's Supply
+                  <br />
+                  Chains
+                </h1>
+              </div>
+              <p className="text-xl text-white/70 max-w-lg">
+                Exploring the transformative impact of the JS-SEZ on Southeast Asia's competitiveness in global value chains.
               </p>
-              <div className="mt-8 flex gap-3">
-                <PrimaryBtn to="/context">Explore the Context</PrimaryBtn>
-                <GhostBtn to="/conclusion">View Analysis</GhostBtn>
+              <div className="flex flex-wrap gap-4">
+                <Button to="/context">Explore the Context</Button>
+                <Button to="/conclusion" variant="outline">View Analysis</Button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 pt-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold" style={{ color: theme.primary }}>$26B</div>
+                  <div className="text-white/50 text-sm">Projected Investment</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold" style={{ color: theme.secondary }}>20K+</div>
+                  <div className="text-white/50 text-sm">Jobs Created</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold" style={{ color: theme.accent }}>11</div>
+                  <div className="text-white/50 text-sm">Target Sectors</div>
+                </div>
               </div>
             </div>
-            <div className="h-[400px]">
-              <Suspense fallback={<div className="h-full flex items-center justify-center text-white/50">Loading 3D Globe...</div>}>
-                <Globe3D highlightPoints={globePoints} connectionLines={connections} height="400px" />
+
+            <div className="h-[500px] lg:h-[600px]">
+              <Suspense fallback={<Loading3D />}>
+                <EarthGlobe
+                  locations={locations}
+                  connections={connections}
+                  height="100%"
+                  showStars={true}
+                />
               </Suspense>
             </div>
           </div>
         </Container>
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-16 -right-20 h-64 w-64 rounded-full bg-red-500/20 blur-3xl" />
-          <div className="absolute top-36 -left-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
+
+        {/* Animated background elements */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-3xl animate-pulse"
+               style={{ background: `${theme.primary}20` }} />
+          <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full blur-3xl animate-pulse"
+               style={{ background: `${theme.secondary}20`, animationDelay: '1s' }} />
         </div>
       </section>
 
-      {/* 3D Region Map Section */}
+      {/* Interactive Map Section */}
       <Section>
-        <Eyebrow>Interactive Map</Eyebrow>
-        <H2>Malaysia-Singapore Economic Corridor</H2>
-        <P>The JS-SEZ represents the deepest economic integration between Singapore and Malaysia since their separation in 1965.</P>
-        <div className="mt-6 h-[350px] rounded-2xl overflow-hidden border border-white/10">
-          <Suspense fallback={<div className="h-full flex items-center justify-center bg-white/5 text-white/50">Loading 3D Map...</div>}>
-            <RegionMap3D height="350px" showSEZ={true} />
+        <div className="text-center mb-12">
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Interactive Map</p>
+          <h2 className="text-4xl md:text-5xl font-bold">
+            <GradientText>Southeast Asia</GradientText> Economic Corridor
+          </h2>
+          <p className="text-white/70 mt-4 max-w-2xl mx-auto">
+            The JS-SEZ creates the deepest economic integration between Singapore and Malaysia since their separation in 1965.
+          </p>
+        </div>
+
+        <div className="h-[500px] rounded-3xl overflow-hidden border border-white/10">
+          <Suspense fallback={<Loading3D />}>
+            <SEAMap3D height="500px" showTradeRoutes={true} />
           </Suspense>
         </div>
       </Section>
 
-      {/* Supply Chain Visualization */}
+      {/* Key Features */}
       <Section>
-        <Eyebrow>Value Chain Integration</Eyebrow>
-        <H2>Cross-Border Supply Chain Flow</H2>
-        <P>Singapore provides finance, tech & innovation while Johor offers land, labor & manufacturing capacity.</P>
-        <div className="mt-6 h-[350px] rounded-2xl overflow-hidden border border-white/10">
-          <Suspense fallback={<div className="h-full flex items-center justify-center bg-white/5 text-white/50">Loading 3D Visualization...</div>}>
-            <SupplyChain3D variant="detailed" height="350px" />
-          </Suspense>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { title: "Streamlined Customs", desc: "QR passport-free clearance at checkpoints", icon: "🛃" },
+            { title: "Joint Infrastructure", desc: "RTS Link connecting both nations", icon: "🚄" },
+            { title: "Investment Hub", desc: "One-stop facilitation center in Johor", icon: "💰" },
+            { title: "Talent Mobility", desc: "Simplified cross-border work permits", icon: "👥" },
+          ].map((feature, i) => (
+            <Card key={i} className="text-center">
+              <div className="text-4xl mb-4">{feature.icon}</div>
+              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+              <p className="text-white/60 text-sm">{feature.desc}</p>
+            </Card>
+          ))}
         </div>
       </Section>
 
-      <Section>
-        <Eyebrow>Quick Access</Eyebrow>
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card><H2>Context</H2><P>Geopolitical shift, historical timeline, and regional significance.</P><div className="mt-4"><PrimaryBtn to="/context">Open</PrimaryBtn></div></Card>
-          <Card><H2>Regional Effects</H2><P>ASEAN integration, competitive dynamics, and regional cohesion.</P><div className="mt-4"><PrimaryBtn to="/china">Open</PrimaryBtn></div></Card>
-          <Card><H2>Case Studies</H2><P>Semiconductors, EV batteries, Pharma, Rare Earths.</P><div className="mt-4"><PrimaryBtn to="/case-studies">Open</PrimaryBtn></div></Card>
+      {/* Navigation Cards */}
+      <Section className="pb-32">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold">Explore the <GradientText>Full Analysis</GradientText></h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            { title: "Historical Context", desc: "Timeline from 1965 to present day", to: "/history", color: "#f59e0b" },
+            { title: "Regional Effects", desc: "ASEAN integration and dynamics", to: "/regional", color: "#10b981" },
+            { title: "Global Impact", desc: "Value chains and US-China context", to: "/global", color: "#3b82f6" },
+          ].map((card, i) => (
+            <Card key={i} className="group cursor-pointer" onClick={() => {}}>
+              <div className="h-2 w-20 rounded-full mb-6" style={{ background: card.color }} />
+              <h3 className="text-2xl font-bold mb-3">{card.title}</h3>
+              <p className="text-white/60 mb-6">{card.desc}</p>
+              <Button to={card.to} variant="outline">Explore</Button>
+            </Card>
+          ))}
         </div>
       </Section>
     </>
   );
 }
 
-/* ---------------- CONTEXT ---------------- */
+/* ==================== CONTEXT PAGE ==================== */
 function Context() {
-  const nav = useNavigate();
-  return (
-    <Section>
-      <Eyebrow>Context and Theoretical Framework</Eyebrow>
-      <H2>Understanding the Geopolitical Shift</H2>
-      <P>
-        The intensifying US–China rivalry is reshaping globalization, injecting geopolitics into supply‑chain decisions once driven purely by efficiency. Policymakers increasingly frame this relationship through the Thucydides' Trap.
-      </P>
-      <P>
-        Global logistics networks — once optimized for cost and speed — are now viewed through a national security prism. Supply routes, ports, and chokepoints are strategic assets or vulnerabilities.
-      </P>
-      <div className="grid sm:grid-cols-3 gap-3 mt-6">
-        <Card><p className="font-medium">Strategic Competition</p><p className="text-white/70 text-sm">Geopolitics in every supply‑chain decision</p></Card>
-        <Card><p className="font-medium">Fragmentation</p><p className="text-white/70 text-sm">Decoupling & regionalization</p></Card>
-        <Card><p className="font-medium">Securitization</p><p className="text-white/70 text-sm">Logistics as national security</p></Card>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/china">Next: China</PrimaryBtn>
-        <button onClick={()=>nav(-1)} className="px-5 py-3 rounded-xl border border-white/15 hover:bg-white/5">Back</button>
-      </div>
-    </Section>
-  );
-}
+  const theme = useTheme();
 
-/* ---------------- CHINA ---------------- */
-function China() {
   return (
-    <Section>
-      <H2>China: The Central Node of Global Manufacturing</H2>
-      <P>China ~33% of global manufacturing, ~15% of world exports; ~94% of Fortune 1000 have Tier‑1/2 suppliers in China.</P>
-      <div className="grid md:grid-cols-2 gap-8 items-start mt-6">
-        <Card className="aspect-video flex items-center justify-center">
-          <SVGChina />
-        </Card>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <Stat v="33%" l="Manufacturing Output" />
-          <Stat v="94%" l="Fortune 1000 Reach" />
-          <Stat v="15%" l="World Exports" />
-        </div>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/resilience">Next: Resilience</PrimaryBtn>
-        <GhostBtn to="/">Home</GhostBtn>
-      </div>
-    </Section>
-  );
-}
+    <>
+      <section className="pt-32 pb-20">
+        <Container>
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Why This Topic?</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-8">
+            Understanding the <GradientText>Geopolitical Shift</GradientText>
+          </h1>
+          <p className="text-xl text-white/70 max-w-3xl">
+            The JS-SEZ emerges at a critical moment when companies are diversifying production from concentrated locations.
+          </p>
+        </Container>
+      </section>
 
-/* ---------------- RESILIENCE ---------------- */
-function Resilience() {
-  const items = [
-    { period: "2018–2019", text: "Trade War Era: tariffs expose vulnerability" },
-    { period: "2020–2021", text: "COVID‑19: collapse of global chains" },
-    { period: "2022", text: "Ukraine: energy/commodities disrupt" },
-    { period: "2023–2024", text: "Friend‑shoring & regional hubs" },
-  ];
-  return (
-    <Section>
-      <H2>The Resilience Imperative: JIT → JIC</H2>
-      <P>Crises exposed fragility of hyper‑efficient networks; new mantra: build slack, redundancy, buffers.</P>
-      <Card className="mt-6">
-        <svg viewBox="0 0 860 150" className="w-full h-32">
-          <line x1="40" y1="80" x2="820" y2="80" stroke="#64748b" strokeWidth="2" />
-          {items.map((it,i)=> (
-            <g key={i} transform={`translate(${120 + i*200},0)`}>
-              <circle cx="0" cy="80" r="10" fill="#e5e7eb" />
-              <text x="0" y="60" textAnchor="middle" fontSize="12" fill="white">{it.period}</text>
-              <text x="0" y="110" textAnchor="middle" fontSize="12" fill="#d1d5db">{it.text}</text>
-            </g>
+      <Section>
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            { title: "Regional Significance", desc: "A major initiative transforming economic and political relations between two key Southeast Asian nations.", color: theme.primary },
+            { title: "Timely & Relevant", desc: "A current, real-world project being developed right now, making it practical and meaningful to study.", color: theme.secondary },
+            { title: "Geopolitical Insight", desc: "Explores how diplomacy, policy, and economics interact to shape regional cooperation and stability.", color: theme.accent },
+          ].map((item, i) => (
+            <Card key={i}>
+              <div className="w-12 h-12 rounded-xl mb-6 flex items-center justify-center"
+                   style={{ background: `${item.color}30` }}>
+                <div className="w-4 h-4 rounded-full" style={{ background: item.color }} />
+              </div>
+              <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+              <p className="text-white/60">{item.desc}</p>
+            </Card>
           ))}
-        </svg>
-      </Card>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/china-plus-one">Next: China+1</PrimaryBtn>
-        <GhostBtn to="/china">Back: China</GhostBtn>
-      </div>
-    </Section>
-  );
-}
-
-/* ---------------- CHINA+1 ---------------- */
-function ChinaPlusOne() {
-  return (
-    <Section>
-      <H2>Geopolitical Reconfiguration in Asia — “China+1”</H2>
-      <P>Maintain China, add at least one alternate Asian location; SEA benefits (Vietnam, Thailand, Indonesia).</P>
-      <div className="grid sm:grid-cols-3 gap-3 mt-6 text-sm">
-        <Card><p className="font-semibold">Vietnam</p><p className="text-white/70">Electronics & textiles; strong FDI</p></Card>
-        <Card><p className="font-semibold">Thailand</p><p className="text-white/70">Automotive & EV batteries</p></Card>
-        <Card><p className="font-semibold">Indonesia</p><p className="text-white/70">Critical minerals & consumer</p></Card>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/sovereignty">Next: Sovereignty</PrimaryBtn>
-        <GhostBtn to="/resilience">Back: Resilience</GhostBtn>
-      </div>
-    </Section>
-  );
-}
-
-/* ---------------- SOVEREIGNTY ---------------- */
-function Sovereignty() {
-  return (
-    <Section>
-      <H2>Corporate Sovereignty vs State Sovereignty</H2>
-      <div className="grid md:grid-cols-3 gap-4 mt-6">
-        <Card><p className="font-semibold">Corporate Logic</p><p className="text-white/80 text-sm mt-1">Efficiency, profit, market access</p></Card>
-        <Card><p className="font-semibold">Geopolitical Mandates</p><p className="text-white/80 text-sm mt-1">National security, autonomy, alliances</p></Card>
-        <Card><p className="font-semibold">New Equilibrium</p><p className="text-white/80 text-sm mt-1">Flex within strategic guardrails</p></Card>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/chokepoints">Next: Chokepoints</PrimaryBtn>
-        <GhostBtn to="/china-plus-one">Back: China+1</GhostBtn>
-      </div>
-    </Section>
-  );
-}
-
-/* ---------------- CHOKEPOINTS ---------------- */
-function Chokepoints() {
-  return (
-    <Section>
-      <H2>Strategic Chokepoints</H2>
-      <P>~80% of China’s oil via Malacca; ~25% global trade; ~15M barrels/day — second to Hormuz.</P>
-      <div className="grid md:grid-cols-2 gap-8 items-center mt-6">
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <Stat v="80%" l="Malacca dependency" />
-          <Stat v="25%" l="Global trade" />
-          <Stat v="15M" l="Barrels/day" />
         </div>
-        <Card className="flex items-center justify-center">
-          <svg viewBox="0 0 220 140" className="w-full h-32">
-            <path d="M40 90 A60 60 0 1 1 160 90" stroke="#374151" strokeWidth="10" fill="none" />
-            <path d="M40 90 A60 60 0 0 1 136 40" stroke="#e5e7eb" strokeWidth="10" fill="none" />
-            <text x="110" y="120" textAnchor="middle" fontSize="14" fill="#fff">~80%</text>
-          </svg>
-        </Card>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/critical-perspectives">Next: Critical</PrimaryBtn>
-        <GhostBtn to="/sovereignty">Back: Sovereignty</GhostBtn>
-      </div>
-    </Section>
-  );
-}
+      </Section>
 
-/* ---------------- CRITICAL PERSPECTIVES ---------------- */
-function Critical() {
-  return (
-    <Section>
-      <H2>Critical Geopolitics: Narratives & Soft Power</H2>
-      <div className="grid md:grid-cols-3 gap-4 mt-6 text-sm">
-        <Card><p className="font-semibold">Securitizing Supply Chains</p><p className="text-white/80 mt-1">Leaders frame dependence as existential; subsidies & blocs.</p></Card>
-        <Card><p className="font-semibold">Geo‑economic Narratives</p><p className="text-white/80 mt-1">Friend‑shoring among allies; risk of rival blocs.</p></Card>
-        <Card><p className="font-semibold">Questioning Power</p><p className="text-white/80 mt-1">Whose interests do these narratives serve?</p></Card>
-      </div>
-      <div className="mt-8 grid md:grid-cols-2 gap-4 text-sm">
-        <Card>
-          <p className="font-semibold">The Thucydides’ Trap in Economic Logistics</p>
-          <p className="text-white/80 mt-2">Security dilemma → logistics divide: parallel systems aligned to rival spheres (Chip 4, Made in China 2025, stockpiles).</p>
-        </Card>
-        <Card>
-          <p className="font-semibold">Spheres Snapshot</p>
-          <ul className="list-disc list-inside text-white/80 mt-2">
-            <li>US/Allied: integrated corridors, trusted standards, diversified partners</li>
-            <li>China/Aligned: integrated corridors, regional ties, alternative standards</li>
-          </ul>
-        </Card>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/case-studies">Next: Case Studies</PrimaryBtn>
-        <GhostBtn to="/chokepoints">Back: Chokepoints</GhostBtn>
-      </div>
-    </Section>
-  );
-}
+      <Section>
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold">What is the <GradientText>JS-SEZ</GradientText>?</h2>
+        </div>
 
-/* ---------------- CASE STUDIES ---------------- */
-function CaseStudies() {
-  const cases = [
-    { t: "Semiconductors: The New Oil", d: "Taiwan (TSMC) ~60% semis, ~90% advanced chips; export bans & CHIPS Act." },
-    { t: "EV Batteries: Critical Minerals Control", d: "China leads refining & cell manufacturing; allies push mining, recycling, alt chemistries." },
-    { t: "Pharmaceuticals: Health Security", d: "Large share of APIs from China; pandemic spurred regionalization." },
-    { t: "Rare Earths: Weaponized Resources", d: "Export curbs drove alternate sources (Australia, Mountain Pass) & recycling." },
-  ];
-  return (
-    <Section>
-      <H2>Case Studies of Strategic Industries</H2>
-      <div className="grid md:grid-cols-2 gap-6 mt-6">
-        {cases.map((c) => (
-          <Card key={c.t}>
-            <p className="font-semibold text-lg">{c.t}</p>
-            <p className="text-white/80 text-sm mt-2">{c.d}</p>
-            <svg viewBox="0 0 200 70" className="w-full h-16 mt-3">
-              <polyline points="0,60 200,60" stroke="#374151" strokeWidth="2" fill="none" />
-              <polyline points="0,50 40,30 80,45 120,25 160,35 200,20" stroke="#e5e7eb" strokeWidth="3" fill="none" />
-            </svg>
-          </Card>
-        ))}
-      </div>
-      <div className="mt-8 flex gap-3">
-        <PrimaryBtn to="/conclusion">Next: Conclusion</PrimaryBtn>
-        <GhostBtn to="/critical-perspectives">Back: Critical</GhostBtn>
-      </div>
-    </Section>
-  );
-}
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <p className="text-white/80 text-lg">
+              The JS-SEZ represents the deepest economic integration between Singapore and Malaysia since their separation in 1965. Officially launched in January 2025, it creates a unified economic zone spanning both nations.
+            </p>
 
-/* ---------------- CONCLUSION ---------------- */
-function Conclusion() {
-  const keys = [
-    ["01", "From Integration to Fragmentation", "Deliberate decoupling & parallel systems"],
-    ["02", "From Efficiency to Resilience", "JIC buffers, redundancy, stockpiles"],
-    ["03", "From Globalization to Regionalization", "Regional blocs & hubs"],
-    ["04", "From Market to Security Logic", "State mandates constrain firms"],
-  ];
-  return (
-    <Section>
-      <H2>Conclusion: Toward a Geopoliticized Supply Chain Order</H2>
-      <P>Efficiency now coexists with geopolitical risk at every decision point. The 2020s playbook plans for worst‑case scenarios, not just optimization.</P>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-        {keys.map(([n,t,d]) => (
-          <Card key={n}><p className="text-xs text-white/60">{n}</p><p className="font-medium">{t}</p><p className="text-white/70 text-sm">{d}</p></Card>
-        ))}
-      </div>
-      <div className="mt-10 grid md:grid-cols-3 gap-6">
-        <Card><p className="font-semibold">Asia’s Evolving Role</p><p className="text-white/80 mt-1">Manufacturing remains centered in Asia, but capacity rewires into a multipolar map (China, SEA, South Asia).</p></Card>
-        <Card><p className="font-semibold">Corporate Sovereignty Redefined</p><p className="text-white/80 mt-1">High‑stakes sectors operate under state mandates; resilience becomes core.</p></Card>
-        <Card><p className="font-semibold">Strategic Imperatives</p><ul className="list-disc list-inside text-white/80 mt-1 text-sm"><li>Build geopolitical risk capabilities</li><li>Redundant multi‑regional suppliers</li><li>Relationships across regions</li><li>Prepare for decoupling/disruption</li></ul></Card>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <GhostBtn to="/case-studies">Back: Case Studies</GhostBtn>
-        <GhostBtn to="/">Home</GhostBtn>
-      </div>
-    </Section>
-  );
-}
-
-/* ---------------- VISUALS ---------------- */
-function SVGChina(){
-  return (
-    <svg viewBox="0 0 600 340" className="w-full h-full">
-      <defs>
-        <radialGradient id="g" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-        </radialGradient>
-      </defs>
-      <rect width="600" height="340" fill="url(#g)" />
-      {Array.from({length:160}).map((_,i)=> (
-        <circle key={i} cx={(i*37)%600} cy={(i*53)%340} r={(i%5===0)?2.2:1.2} fill="#a3a3a3" opacity="0.45" />
-      ))}
-      <circle cx="430" cy="135" r="9" fill="#e5e7eb" />
-      <text x="445" y="130" fill="#fff" fontSize="12">China</text>
-    </svg>
-  );
-}
-
-/* ---------------- FOOTER ---------------- */
-function Footer() {
-  return (
-    <footer className="border-t border-white/10">
-      <Container>
-        <div className="py-8 text-sm text-white/60 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p>© 2025 Rewiring Asia (educational replica)</p>
-          <div className="flex gap-4">
-            <NavLink to="/" className="hover:text-white">Home</NavLink>
-            <NavLink to="/conclusion" className="hover:text-white">Conclusion</NavLink>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Streamlined customs", icon: "🛃" },
+                { label: "Joint infrastructure", icon: "🏗️" },
+                { label: "Investment facilitation", icon: "💼" },
+                { label: "Talent mobility", icon: "🚶" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-2xl">{item.icon}</span>
+                  <span className="text-white/80">{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
+
+          <div className="h-[400px] rounded-2xl overflow-hidden border border-white/10">
+            <Suspense fallback={<Loading3D />}>
+              <SupplyChain3D variant="detailed" height="400px" />
+            </Suspense>
+          </div>
+        </div>
+      </Section>
+
+      <Section className="pb-32">
+        <div className="flex justify-between items-center">
+          <Button to="/" variant="outline">Back to Home</Button>
+          <Button to="/history">Next: Historical Timeline</Button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+/* ==================== HISTORY PAGE ==================== */
+function History() {
+  const theme = useTheme();
+  const [activeEvent, setActiveEvent] = useState(null);
+
+  const events = [
+    { year: "1800s", title: "British Rule", description: "Colonial administration of Malaya and Singapore", color: "#6b7280" },
+    { year: "1946", title: "Separation", description: "Singapore becomes a separate Crown colony", color: "#6b7280" },
+    { year: "1957", title: "Independence", description: "Malaya gains independence from Britain", color: "#f59e0b" },
+    { year: "1963", title: "Merger", description: "Singapore joins the Federation of Malaysia", color: "#3b82f6" },
+    { year: "1965", title: "Split", description: "Singapore separates from Malaysia", color: "#ef4444" },
+    { year: "2006", title: "Iskandar", description: "Iskandar Malaysia development launched", color: "#8b5cf6" },
+    { year: "2024", title: "JS-SEZ", description: "Special Economic Zone agreement signed", color: "#10b981" },
+    { year: "2027", title: "RTS Link", description: "Rapid Transit System begins operations", color: "#fbbf24" },
+  ];
+
+  return (
+    <>
+      <section className="pt-32 pb-20">
+        <Container>
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Historical Context</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-8">
+            <GradientText>Timeline</GradientText> of Relations
+          </h1>
+          <p className="text-xl text-white/70 max-w-3xl">
+            From colonial separation to modern integration, the journey of Malaysia-Singapore relations.
+          </p>
+        </Container>
+      </section>
+
+      <Section>
+        <div className="h-[450px] rounded-3xl overflow-hidden border border-white/10 mb-12">
+          <Suspense fallback={<Loading3D />}>
+            <Timeline3DNew
+              events={events}
+              height="450px"
+              activeEvent={activeEvent}
+              onEventClick={setActiveEvent}
+            />
+          </Suspense>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {events.slice(-4).map((event, i) => (
+            <Card key={i} className={activeEvent === events.indexOf(event) ? 'ring-2' : ''}
+                  style={{ ringColor: event.color }}>
+              <div className="text-sm font-bold mb-2" style={{ color: event.color }}>{event.year}</div>
+              <h3 className="font-bold mb-2">{event.title}</h3>
+              <p className="text-white/60 text-sm">{event.description}</p>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <h2 className="text-3xl font-bold mb-8">Key Historical Moments</h2>
+        <div className="grid md:grid-cols-2 gap-8">
+          <Card>
+            <h3 className="text-xl font-bold mb-4" style={{ color: theme.primary }}>The 1965 Separation</h3>
+            <p className="text-white/70">
+              The separation resulted from deep political and economic differences and rising racial tensions. While Singapore's leaders felt marginalized in the Malaysian federal government, Malaysians resented Singapore's thriving economy.
+            </p>
+          </Card>
+          <Card>
+            <h3 className="text-xl font-bold mb-4" style={{ color: theme.secondary }}>Water Agreements (1961-2061)</h3>
+            <p className="text-white/70">
+              Singapore purchases raw water from Johor under long-term contracts for decades. The 1962 agreement allows Singapore to draw up to 250 million gallons daily from the Johor River.
+            </p>
+          </Card>
+        </div>
+      </Section>
+
+      <Section className="pb-32">
+        <div className="flex justify-between items-center">
+          <Button to="/context" variant="outline">Back: Context</Button>
+          <Button to="/regional">Next: Regional Effects</Button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+/* ==================== REGIONAL PAGE ==================== */
+function Regional() {
+  const theme = useTheme();
+  const [selectedCountry, setSelectedCountry] = useState(null);
+
+  return (
+    <>
+      <section className="pt-32 pb-20">
+        <Container>
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Regional Effects</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-8">
+            <GradientText>ASEAN</GradientText> Integration
+          </h1>
+          <p className="text-xl text-white/70 max-w-3xl">
+            How the JS-SEZ influences regional dynamics and Southeast Asian competitiveness.
+          </p>
+        </Container>
+      </section>
+
+      <Section>
+        <div className="h-[500px] rounded-3xl overflow-hidden border border-white/10 mb-8">
+          <Suspense fallback={<Loading3D />}>
+            <SEAMap3D
+              height="500px"
+              selectedCountry={selectedCountry}
+              onCountrySelect={setSelectedCountry}
+            />
+          </Suspense>
+        </div>
+
+        <p className="text-center text-white/50 text-sm">Click on countries to explore their role in regional trade</p>
+      </Section>
+
+      <Section>
+        <h2 className="text-3xl font-bold mb-8">Competitive Dynamics</h2>
+        <div className="grid md:grid-cols-2 gap-8">
+          <Card>
+            <h3 className="text-xl font-bold mb-4" style={{ color: theme.primary }}>Competition with Other SEZs</h3>
+            <p className="text-white/70 mb-4">
+              The JS-SEZ competes with other special zones in Southeast Asia, including Thailand's Eastern Economic Corridor and Vietnam's special zones.
+            </p>
+            <div className="space-y-2">
+              {["Thailand EEC", "Vietnam SEZs", "Indonesia Special Zones"].map((zone, i) => (
+                <div key={i} className="flex items-center gap-3 text-sm">
+                  <div className="w-2 h-2 rounded-full" style={{ background: theme.secondary }} />
+                  <span className="text-white/60">{zone}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <h3 className="text-xl font-bold mb-4" style={{ color: theme.secondary }}>Benefits for Partners</h3>
+            <p className="text-white/70 mb-4">
+              Cross-border integration of industries and value chains improves productivity and innovation of the regional cluster.
+            </p>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="text-center p-4 rounded-xl bg-white/5">
+                <div className="text-2xl font-bold" style={{ color: theme.primary }}>SG</div>
+                <div className="text-white/50 text-xs">Finance & Tech</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-white/5">
+                <div className="text-2xl font-bold" style={{ color: theme.secondary }}>MY</div>
+                <div className="text-white/50 text-xs">Land & Labor</div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </Section>
+
+      <Section className="pb-32">
+        <div className="flex justify-between items-center">
+          <Button to="/history" variant="outline">Back: History</Button>
+          <Button to="/global">Next: Global Effects</Button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+/* ==================== GLOBAL PAGE ==================== */
+function Global() {
+  const theme = useTheme();
+
+  const globalLocations = [
+    { lat: 1.3521, lng: 103.8198, label: "Singapore", color: "#ef4444" },
+    { lat: 39.9042, lng: 116.4074, label: "Beijing", color: "#fbbf24" },
+    { lat: 38.9072, lng: -77.0369, label: "Washington DC", color: "#3b82f6" },
+    { lat: 51.5074, lng: -0.1278, label: "London", color: "#8b5cf6" },
+    { lat: 35.6762, lng: 139.6503, label: "Tokyo", color: "#10b981" },
+    { lat: 28.6139, lng: 77.2090, label: "New Delhi", color: "#ec4899" },
+  ];
+
+  const globalConnections = [
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 39.9042, lng: 116.4074 }, color: "#fbbf24" },
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 38.9072, lng: -77.0369 }, color: "#3b82f6" },
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 35.6762, lng: 139.6503 }, color: "#10b981" },
+  ];
+
+  return (
+    <>
+      <section className="pt-32 pb-20">
+        <Container>
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Global Effects</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-8">
+            <GradientText>Global Value Chain</GradientText> Positioning
+          </h1>
+          <p className="text-xl text-white/70 max-w-3xl">
+            How the JS-SEZ positions itself in the context of US-China competition and global supply chain restructuring.
+          </p>
+        </Container>
+      </section>
+
+      <Section>
+        <div className="h-[500px] rounded-3xl overflow-hidden border border-white/10">
+          <Suspense fallback={<Loading3D />}>
+            <EarthGlobe
+              locations={globalLocations}
+              connections={globalConnections}
+              height="500px"
+              autoRotate={true}
+            />
+          </Suspense>
+        </div>
+      </Section>
+
+      <Section>
+        <h2 className="text-3xl font-bold mb-8">US-China Decoupling Context</h2>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            { title: "Friend-Shoring", desc: "Businesses exist in a deliberately neutral area, gaining operational stability", color: theme.primary },
+            { title: "Supply Chain Resilience", desc: "Alternative path for production and investment amid trade disputes", color: theme.secondary },
+            { title: "Market Access", desc: "Access to numerous FTAs, reaching various markets easily", color: theme.accent },
+          ].map((item, i) => (
+            <Card key={i}>
+              <div className="h-1 w-16 rounded-full mb-6" style={{ background: item.color }} />
+              <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+              <p className="text-white/60">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <h2 className="text-3xl font-bold mb-8">Strategic Industries</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {[
+            { title: "Semiconductors", desc: "Critical technology sector with global supply chain implications" },
+            { title: "EV Batteries", desc: "Green technology and critical minerals processing" },
+            { title: "Digital Services", desc: "Data centers, AI, and digital economy infrastructure" },
+            { title: "Pharmaceuticals", desc: "Healthcare manufacturing and API production" },
+          ].map((item, i) => (
+            <Card key={i}>
+              <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+              <p className="text-white/60">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="pb-32">
+        <div className="flex justify-between items-center">
+          <Button to="/regional" variant="outline">Back: Regional</Button>
+          <Button to="/political">Next: Political</Button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+/* ==================== POLITICAL PAGE ==================== */
+function Political() {
+  const theme = useTheme();
+
+  return (
+    <>
+      <section className="pt-32 pb-20">
+        <Container>
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Political Effects</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-8">
+            <GradientText>Political</GradientText> Implications
+          </h1>
+          <p className="text-xl text-white/70 max-w-3xl">
+            Navigating the complex political landscape of Malaysia-Singapore relations and regional dynamics.
+          </p>
+        </Container>
+      </section>
+
+      <Section>
+        <div className="grid lg:grid-cols-2 gap-12">
+          <div>
+            <h2 className="text-3xl font-bold mb-6" style={{ color: theme.primary }}>Malaysia</h2>
+            <div className="space-y-4">
+              {[
+                { title: "Political Instability", desc: "Multiple leadership changes since 2018 create policy uncertainty" },
+                { title: "Ethnic Politics", desc: "Bumiputera policies balance inclusiveness and competitiveness" },
+                { title: "Federal-State Relations", desc: "Johor's autonomy and Sultan's role add complexity" },
+              ].map((item, i) => (
+                <Card key={i} hover={false}>
+                  <h3 className="font-bold mb-2">{item.title}</h3>
+                  <p className="text-white/60 text-sm">{item.desc}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-3xl font-bold mb-6" style={{ color: theme.secondary }}>Singapore</h2>
+            <div className="space-y-4">
+              {[
+                { title: "Labor Concerns", desc: "Cross-border mobility raises competition and wage pressure fears" },
+                { title: "Political Management", desc: "PAP navigates increasingly polarized political landscape" },
+                { title: "Business Dynamics", desc: "MNCs see opportunities while SMEs worry about competition" },
+              ].map((item, i) => (
+                <Card key={i} hover={false}>
+                  <h3 className="font-bold mb-2">{item.title}</h3>
+                  <p className="text-white/60 text-sm">{item.desc}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section>
+        <h2 className="text-3xl font-bold mb-8">Geopolitical Considerations</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="md:col-span-2">
+            <h3 className="text-xl font-bold mb-4">Great Power Competition</h3>
+            <p className="text-white/70 mb-4">
+              The JS-SEZ matures when the world is being reshaped by increasingly competitive relations between China and the United States. Southeast Asia has become a key battleground of economic statecraft.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-white/5 text-center">
+                <div className="text-2xl mb-2">🇺🇸</div>
+                <div className="text-sm text-white/60">US/Allied Sphere</div>
+              </div>
+              <div className="p-4 rounded-xl bg-white/5 text-center">
+                <div className="text-2xl mb-2">🌏</div>
+                <div className="text-sm text-white/60">ASEAN Neutrality</div>
+              </div>
+              <div className="p-4 rounded-xl bg-white/5 text-center">
+                <div className="text-2xl mb-2">🇨🇳</div>
+                <div className="text-sm text-white/60">China/BRI Sphere</div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </Section>
+
+      <Section className="pb-32">
+        <div className="flex justify-between items-center">
+          <Button to="/global" variant="outline">Back: Global</Button>
+          <Button to="/conclusion">Next: Conclusion</Button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+/* ==================== CONCLUSION PAGE ==================== */
+function Conclusion() {
+  const theme = useTheme();
+
+  return (
+    <>
+      <section className="pt-32 pb-20">
+        <Container>
+          <p className="text-sm uppercase tracking-widest mb-4" style={{ color: theme.primary }}>Conclusion</p>
+          <h1 className="text-5xl md:text-6xl font-bold mb-8">
+            <GradientText>Strategic</GradientText> Imperatives
+          </h1>
+          <p className="text-xl text-white/70 max-w-3xl">
+            The JS-SEZ offers a major opportunity for Malaysia-Singapore to deepen cooperation and strengthen ASEAN integration.
+          </p>
+        </Container>
+      </section>
+
+      <Section>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {[
+            { num: "01", title: "Economic Diversification", desc: "Combining strengths for high-value growth" },
+            { num: "02", title: "Social Inclusion", desc: "Ensuring benefits reach all communities" },
+            { num: "03", title: "Binding Agreements", desc: "Mitigating political instability risks" },
+            { num: "04", title: "Regional Model", desc: "Scalable example for ASEAN cooperation" },
+          ].map((item, i) => (
+            <Card key={i}>
+              <div className="text-4xl font-bold mb-4" style={{ color: theme.primary }}>{item.num}</div>
+              <h3 className="font-bold mb-2">{item.title}</h3>
+              <p className="text-white/60 text-sm">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <Card className="text-center py-12" hover={false}>
+          <h2 className="text-3xl font-bold mb-6">Key Takeaway</h2>
+          <p className="text-xl text-white/80 max-w-3xl mx-auto mb-8">
+            The JS-SEZ has the potential to redefine Malaysia-Singapore's relationship and serve as a scalable model for ASEAN, exemplifying realistic and geopolitically astute cooperation in an increasingly complex global environment.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button to="/">Back to Home</Button>
+            <Button to="/context" variant="outline">Start Over</Button>
+          </div>
+        </Card>
+      </Section>
+
+      <Section className="pb-32">
+        <h2 className="text-2xl font-bold mb-6 text-center">Presented By</h2>
+        <p className="text-center text-white/60">
+          Samarah Piyush, Saanvi Bagaria, Naisha, Kashvi Tanwar, Liam Leclaircie-Bardon & Basile Echene
+        </p>
+      </Section>
+    </>
+  );
+}
+
+/* ==================== FOOTER ==================== */
+function Footer() {
+  const theme = useTheme();
+
+  return (
+    <footer className="border-t border-white/10 py-12">
+      <Container>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                 style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}>
+              <span className="text-white font-bold">JS</span>
+            </div>
+            <span className="text-white/60">JS-SEZ Analysis 2025</span>
+          </div>
+          <nav className="flex gap-6 text-sm text-white/60">
+            <NavLink to="/" className="hover:text-white transition-colors">Home</NavLink>
+            <NavLink to="/context" className="hover:text-white transition-colors">Context</NavLink>
+            <NavLink to="/conclusion" className="hover:text-white transition-colors">Conclusion</NavLink>
+          </nav>
         </div>
       </Container>
     </footer>
