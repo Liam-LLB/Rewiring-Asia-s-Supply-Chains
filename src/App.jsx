@@ -1,5 +1,8 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route, NavLink, useNavigate } from "react-router-dom";
+import Globe3D from "./components/Globe3D";
+import RegionMap3D from "./components/RegionMap3D";
+import SupplyChain3D from "./components/SupplyChain3D";
 
 /*
   Full multi-page replica (single-file preview)
@@ -111,31 +114,77 @@ function GhostBtn({ to, children }) {
 
 /* ---------------- HOME ---------------- */
 function Home() {
+  const globePoints = [
+    { lat: 1.3521, lng: 103.8198, label: "Singapore", color: "#ef4444" },
+    { lat: 1.4927, lng: 103.7414, label: "Johor", color: "#3b82f6" },
+    { lat: 3.139, lng: 101.6869, label: "Kuala Lumpur", color: "#fbbf24" },
+    { lat: 13.7563, lng: 100.5018, label: "Bangkok", color: "#10b981" },
+    { lat: 21.0285, lng: 105.8542, label: "Hanoi", color: "#8b5cf6" },
+  ];
+
+  const connections = [
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 1.4927, lng: 103.7414 }, color: "#fbbf24" },
+    { from: { lat: 1.3521, lng: 103.8198 }, to: { lat: 3.139, lng: 101.6869 }, color: "#3b82f6" },
+  ];
+
   return (
     <>
       <section className="relative overflow-hidden">
         <Container>
-          <div className="py-16 md:py-20">
-            <H1>Rewiring Asia's Supply Chains<br/>Under US–China Rivalry</H1>
-            <P className="mt-4" />
-            <p className="mt-4 text-lg text-white/80 max-w-2xl">From “Just‑in‑Time” to “China+1” and the New Geography of Corporate Sovereignty.</p>
-            <div className="mt-8 flex gap-3">
-              <PrimaryBtn to="/context">Explore the Context</PrimaryBtn>
-              <GhostBtn to="/conclusion">View Analysis</GhostBtn>
+          <div className="py-10 md:py-16 grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <Eyebrow>Johor-Singapore Special Economic Zone</Eyebrow>
+              <H1>JS-SEZ:<br/>Rewiring Asia's Supply Chains</H1>
+              <p className="mt-4 text-lg text-white/80 max-w-2xl">
+                Exploring the impact of the Johor-Singapore SEZ on Southeast Asia's competitiveness in global value chains.
+              </p>
+              <div className="mt-8 flex gap-3">
+                <PrimaryBtn to="/context">Explore the Context</PrimaryBtn>
+                <GhostBtn to="/conclusion">View Analysis</GhostBtn>
+              </div>
+            </div>
+            <div className="h-[400px]">
+              <Suspense fallback={<div className="h-full flex items-center justify-center text-white/50">Loading 3D Globe...</div>}>
+                <Globe3D highlightPoints={globePoints} connectionLines={connections} height="400px" />
+              </Suspense>
             </div>
           </div>
         </Container>
-        {/* Soft background blobs */}
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-16 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute top-36 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -top-16 -right-20 h-64 w-64 rounded-full bg-red-500/20 blur-3xl" />
+          <div className="absolute top-36 -left-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
         </div>
       </section>
+
+      {/* 3D Region Map Section */}
+      <Section>
+        <Eyebrow>Interactive Map</Eyebrow>
+        <H2>Malaysia-Singapore Economic Corridor</H2>
+        <P>The JS-SEZ represents the deepest economic integration between Singapore and Malaysia since their separation in 1965.</P>
+        <div className="mt-6 h-[350px] rounded-2xl overflow-hidden border border-white/10">
+          <Suspense fallback={<div className="h-full flex items-center justify-center bg-white/5 text-white/50">Loading 3D Map...</div>}>
+            <RegionMap3D height="350px" showSEZ={true} />
+          </Suspense>
+        </div>
+      </Section>
+
+      {/* Supply Chain Visualization */}
+      <Section>
+        <Eyebrow>Value Chain Integration</Eyebrow>
+        <H2>Cross-Border Supply Chain Flow</H2>
+        <P>Singapore provides finance, tech & innovation while Johor offers land, labor & manufacturing capacity.</P>
+        <div className="mt-6 h-[350px] rounded-2xl overflow-hidden border border-white/10">
+          <Suspense fallback={<div className="h-full flex items-center justify-center bg-white/5 text-white/50">Loading 3D Visualization...</div>}>
+            <SupplyChain3D variant="detailed" height="350px" />
+          </Suspense>
+        </div>
+      </Section>
+
       <Section>
         <Eyebrow>Quick Access</Eyebrow>
         <div className="grid md:grid-cols-3 gap-4">
-          <Card><H2>Context</H2><P>Geopolitical shift, Thucydides' Trap, end of pure JIT globalization.</P><div className="mt-4"><PrimaryBtn to="/context">Open</PrimaryBtn></div></Card>
-          <Card><H2>China Hub</H2><P>Central node: 33% output, 94% Fortune 1000 reach, 15% exports.</P><div className="mt-4"><PrimaryBtn to="/china">Open</PrimaryBtn></div></Card>
+          <Card><H2>Context</H2><P>Geopolitical shift, historical timeline, and regional significance.</P><div className="mt-4"><PrimaryBtn to="/context">Open</PrimaryBtn></div></Card>
+          <Card><H2>Regional Effects</H2><P>ASEAN integration, competitive dynamics, and regional cohesion.</P><div className="mt-4"><PrimaryBtn to="/china">Open</PrimaryBtn></div></Card>
           <Card><H2>Case Studies</H2><P>Semiconductors, EV batteries, Pharma, Rare Earths.</P><div className="mt-4"><PrimaryBtn to="/case-studies">Open</PrimaryBtn></div></Card>
         </div>
       </Section>
